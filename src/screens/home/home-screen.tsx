@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { Text, View } from 'react-native';
+import { Image, Text, View } from 'react-native';
 
 import { getCurrentVehicle } from '@/services/vehicle-service';
 import { Vehicle } from '@/types/vehicle';
@@ -18,7 +18,18 @@ export function HomeScreen() {
       <Text className="text-3xl font-extrabold text-white">Home</Text>
       {vehicle ? (
         <View className="mt-6 rounded-2xl border border-[#1F2740] bg-[#141A2B] p-4">
-          <Text className="text-xl font-bold text-white">{vehicle.name}</Text>
+          {vehicle.imageUri ? (
+            <Image
+              source={{ uri: vehicle.imageUri }}
+              className="h-52 w-full rounded-xl border border-[#1F2740] bg-[#0C111F]"
+              resizeMode="cover"
+            />
+          ) : (
+            <View className="h-52 w-full items-center justify-center rounded-xl border border-[#1F2740] bg-[#0C111F]">
+              <Text className="text-sm font-semibold text-[#A3ACBF]">No vehicle photo</Text>
+            </View>
+          )}
+          <Text className="mt-4 text-xl font-bold text-white">{vehicle.name}</Text>
           <Text className="mt-2 text-sm text-[#A3ACBF]">
             {vehicle.year} - {vehicle.fuelType} - {vehicle.transmission}
           </Text>

@@ -1,6 +1,7 @@
 import { useMemo, useState } from 'react';
-import { Pressable, ScrollView, Text, TextInput, View } from 'react-native';
+import { Image, Pressable, ScrollView, Text, TextInput, View } from 'react-native';
 import { NativeStackScreenProps } from '@react-navigation/native-stack';
+import * as ImagePicker from 'expo-image-picker';
 
 import { routes } from '@/navigation/routes';
 import { createVehicle } from '@/services/vehicle-service';
@@ -59,6 +60,30 @@ export function AddVehicleScreen({ navigation }: Props) {
     return null;
   }
 
+  async function handlePickImage() {
+    try {
+      const permissionResult = await ImagePicker.requestMediaLibraryPermissionsAsync();
+      if (!permissionResult.granted) {
+        setError('Photo permission is required to select a vehicle image.');
+        return;
+      }
+
+      const result = await ImagePicker.launchImageLibraryAsync({
+        allowsEditing: true,
+        quality: 0.8,
+      });
+
+      if (result.canceled || !result.assets[0]?.uri) {
+        return;
+      }
+
+      updateForm('imageUri', result.assets[0].uri);
+      setError(null);
+    } catch {
+      setError('Unable to open photo library. Please try again.');
+    }
+  }
+
   async function handleSubmit() {
     const validationError = validate();
     if (validationError) {
@@ -93,12 +118,24 @@ export function AddVehicleScreen({ navigation }: Props) {
       <Text className="text-3xl font-extrabold text-white">Add Vehicle</Text>
       <Text className="text-sm text-[#A3ACBF]">Create your first vehicle to continue.</Text>
 
-      <LabeledInput
-        label="Vehicle Photo URL (optional)"
-        placeholder="https://example.com/car.jpg"
-        value={form.imageUri}
-        onChangeText={(value) => updateForm('imageUri', value)}
-      />
+      <View className="gap-2">
+        <Text className="text-sm text-[#A3ACBF]">Vehicle Photo</Text>
+        <Pressable
+          className="items-center rounded-xl border border-[#1F2740] bg-[#141A2B] px-4 py-3"
+          onPress={handlePickImage}
+        >
+          <Text className="text-sm font-semibold text-[#A3ACBF]">
+            {form.imageUri ? 'Change Photo' : 'Upload Photo'}
+          </Text>
+        </Pressable>
+        {form.imageUri ? (
+          <Image
+            source={{ uri: form.imageUri }}
+            className="h-44 w-full rounded-xl border border-[#1F2740] bg-[#141A2B]"
+            resizeMode="cover"
+          />
+        ) : null}
+      </View>
       <LabeledInput
         label="Vehicle Name"
         placeholder="Toyota Supra"
