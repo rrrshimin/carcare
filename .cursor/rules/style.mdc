@@ -1,0 +1,12 @@
+Follow design rules defined in docs/style-guide.md.
+
+Important style tokens:
+
+Primary color: #0051E8
+Background color: #0C111F
+Link color: #367DFF
+Font: Poppins
+
+Prefer consistent spacing and card-based layout.
+
+Use reusable components whenever possible.

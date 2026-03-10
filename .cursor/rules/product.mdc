@@ -1,0 +1,12 @@
+Product behavior must follow the documentation in /docs.
+
+Do not invent features or change workflows.
+
+Primary references:
+
+- docs/product-overview.md
+- docs/app-flows.md
+- docs/screen-specifications.md
+- docs/business-logic.md
+
+When implementing features, always verify against docs/testing-and-acceptance-criteria.md.

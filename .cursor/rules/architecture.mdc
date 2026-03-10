@@ -1,0 +1,12 @@
+All code must follow the architecture described in docs/project-structure.md.
+
+Key rules:
+
+- Use TypeScript
+- Use functional React components
+- Keep business logic outside UI components
+- Use service layer for backend communication
+- Place reusable UI in components/
+- Place calculations in utils/
+
+Never mix UI rendering with business logic.
