@@ -1,7 +1,10 @@
 import { useMemo, useState } from 'react';
-import { Pressable, Text, View } from 'react-native';
+import { Text, View } from 'react-native';
 import { NativeStackScreenProps } from '@react-navigation/native-stack';
 
+import { PrimaryButton } from '@/components/buttons/primary-button';
+import { OnboardingSlideCard } from '@/components/cards/onboarding-slide-card';
+import { PaginationDots } from '@/components/feedback/pagination-dots';
 import { routes } from '@/navigation/routes';
 import { setOnboardingCompleted } from '@/services/storage-service';
 import { SetupFlowStackParamList } from '@/types/navigation';
@@ -45,33 +48,29 @@ export function OnboardingScreen({ navigation }: Props) {
   }
 
   return (
-    <View className="flex-1 bg-[#0C111F] px-6 py-10">
-      <View className="flex-1 items-center justify-center rounded-2xl border border-[#1F2740] bg-[#141A2B] px-6">
-        <View className="h-28 w-28 rounded-full bg-[#0051E8]/20" />
-        <Text className="mt-8 text-center text-3xl font-extrabold text-white">
-          {currentSlide.title}
-        </Text>
-        <Text className="mt-4 text-center text-base text-[#A3ACBF]">{currentSlide.description}</Text>
+    <View className="flex-1 bg-[#0C111F] px-6 py-8">
+      <View className="mb-4">
+        <Text className="text-center text-xl font-extrabold text-white">CarCare Diary</Text>
+        <Text className="mt-1 text-center text-sm text-white">Welcome to your maintenance companion</Text>
       </View>
 
-      <View className="mt-6 flex-row items-center justify-center gap-2">
-        {slides.map((slide, slideIndex) => (
-          <View
-            key={slide.title}
-            className={slideIndex === index ? 'h-2 w-6 rounded-full bg-[#0051E8]' : 'h-2 w-2 rounded-full bg-[#1F2740]'}
-          />
-        ))}
+      <OnboardingSlideCard
+        title={currentSlide.title}
+        description={currentSlide.description}
+        index={index}
+        total={slides.length}
+      />
+
+      <View className="mt-6">
+        <PaginationDots count={slides.length} activeIndex={index} />
       </View>
 
-      <Pressable
-        className="mt-6 items-center rounded-xl bg-[#0051E8] py-4"
+      <PrimaryButton
+        className="mt-6"
         disabled={saving}
         onPress={handlePrimaryAction}
-      >
-        <Text className="text-base font-bold text-white">
-          {isLastSlide ? (saving ? 'Saving...' : 'Get Started') : 'Continue'}
-        </Text>
-      </Pressable>
+        label={isLastSlide ? (saving ? 'Saving...' : 'Get Started') : 'Continue'}
+      />
     </View>
   );
 }

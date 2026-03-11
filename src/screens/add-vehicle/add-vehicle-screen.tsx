@@ -1,8 +1,13 @@
 import { useMemo, useState } from 'react';
-import { Image, Pressable, ScrollView, Text, TextInput, View } from 'react-native';
+import { Image, ScrollView, Text, View } from 'react-native';
 import { NativeStackScreenProps } from '@react-navigation/native-stack';
 import * as ImagePicker from 'expo-image-picker';
 
+import { OutlineButton } from '@/components/buttons/outline-button';
+import { PrimaryButton } from '@/components/buttons/primary-button';
+import { LabeledTextInput } from '@/components/inputs/labeled-text-input';
+import { OptionPillGroup } from '@/components/inputs/option-pill-group';
+import { ScreenTitleBlock } from '@/components/layout/screen-title-block';
 import { routes } from '@/navigation/routes';
 import { createVehicle } from '@/services/vehicle-service';
 import { RootStackParamList, SetupFlowStackParamList } from '@/types/navigation';
@@ -115,19 +120,16 @@ export function AddVehicleScreen({ navigation }: Props) {
 
   return (
     <ScrollView className="flex-1 bg-[#0C111F]" contentContainerStyle={{ padding: 16, gap: 12 }}>
-      <Text className="text-3xl font-extrabold text-white">Add Vehicle</Text>
-      <Text className="text-sm text-[#A3ACBF]">Create your first vehicle to continue.</Text>
+      <ScreenTitleBlock title="Add Vehicle" subtitle="Create your first vehicle to continue." />
 
       <View className="gap-2">
         <Text className="text-sm text-[#A3ACBF]">Vehicle Photo</Text>
-        <Pressable
-          className="items-center rounded-xl border border-[#1F2740] bg-[#141A2B] px-4 py-3"
+        <OutlineButton
+          className="items-center"
+          textClassName="text-[#A3ACBF]"
+          label={form.imageUri ? 'Change Photo' : 'Upload Photo'}
           onPress={handlePickImage}
-        >
-          <Text className="text-sm font-semibold text-[#A3ACBF]">
-            {form.imageUri ? 'Change Photo' : 'Upload Photo'}
-          </Text>
-        </Pressable>
+        />
         {form.imageUri ? (
           <Image
             source={{ uri: form.imageUri }}
@@ -136,13 +138,13 @@ export function AddVehicleScreen({ navigation }: Props) {
           />
         ) : null}
       </View>
-      <LabeledInput
+      <LabeledTextInput
         label="Vehicle Name"
         placeholder="Toyota Supra"
         value={form.name}
         onChangeText={(value) => updateForm('name', value)}
       />
-      <LabeledInput
+      <LabeledTextInput
         label="Year"
         placeholder="2020"
         keyboardType="number-pad"
@@ -150,20 +152,20 @@ export function AddVehicleScreen({ navigation }: Props) {
         onChangeText={(value) => updateForm('year', value)}
       />
 
-      <OptionGroup<FuelType>
+      <OptionPillGroup<FuelType>
         label="Fuel Type"
         options={fuelTypeOptions}
         selected={form.fuelType}
         onSelect={(value) => updateForm('fuelType', value)}
       />
-      <OptionGroup<Transmission>
+      <OptionPillGroup<Transmission>
         label="Transmission"
         options={transmissionOptions}
         selected={form.transmission}
         onSelect={(value) => updateForm('transmission', value)}
       />
 
-      <LabeledInput
+      <LabeledTextInput
         label="Current Odometer"
         placeholder="120000"
         keyboardType="number-pad"
@@ -171,7 +173,7 @@ export function AddVehicleScreen({ navigation }: Props) {
         onChangeText={(value) => updateForm('odometer', value)}
       />
 
-      <OptionGroup<DistanceUnit>
+      <OptionPillGroup<DistanceUnit>
         label="Unit"
         options={unitOptions}
         selected={form.unit}
@@ -180,68 +182,7 @@ export function AddVehicleScreen({ navigation }: Props) {
 
       {error ? <Text className="text-sm text-[#FFB020]">{error}</Text> : null}
 
-      <Pressable
-        className="mt-2 items-center rounded-xl bg-[#0051E8] py-4"
-        disabled={submitting}
-        onPress={handleSubmit}
-      >
-        <Text className="text-base font-bold text-white">{submitting ? 'Adding...' : 'Add'}</Text>
-      </Pressable>
+      <PrimaryButton className="mt-2" disabled={submitting} onPress={handleSubmit} label={submitting ? 'Adding...' : 'Add'} />
     </ScrollView>
-  );
-}
-
-type LabeledInputProps = {
-  label: string;
-  placeholder: string;
-  value: string;
-  onChangeText: (value: string) => void;
-  keyboardType?: 'default' | 'number-pad';
-};
-
-function LabeledInput({ label, placeholder, value, onChangeText, keyboardType = 'default' }: LabeledInputProps) {
-  return (
-    <View className="gap-2">
-      <Text className="text-sm text-[#A3ACBF]">{label}</Text>
-      <TextInput
-        className="rounded-xl border border-[#1F2740] bg-[#141A2B] px-4 py-3 text-white"
-        placeholder={placeholder}
-        placeholderTextColor="#A3ACBF"
-        value={value}
-        keyboardType={keyboardType}
-        onChangeText={onChangeText}
-      />
-    </View>
-  );
-}
-
-type OptionGroupProps<T extends string> = {
-  label: string;
-  options: T[];
-  selected: T;
-  onSelect: (value: T) => void;
-};
-
-function OptionGroup<T extends string>({ label, options, selected, onSelect }: OptionGroupProps<T>) {
-  return (
-    <View className="gap-2">
-      <Text className="text-sm text-[#A3ACBF]">{label}</Text>
-      <View className="flex-row flex-wrap gap-2">
-        {options.map((option) => {
-          const isSelected = selected === option;
-          return (
-            <Pressable
-              key={option}
-              className={isSelected ? 'rounded-xl bg-[#0051E8] px-4 py-2' : 'rounded-xl border border-[#1F2740] bg-[#141A2B] px-4 py-2'}
-              onPress={() => onSelect(option)}
-            >
-              <Text className={isSelected ? 'text-sm font-semibold text-white' : 'text-sm font-semibold text-[#A3ACBF]'}>
-                {option}
-              </Text>
-            </Pressable>
-          );
-        })}
-      </View>
-    </View>
   );
 }
