@@ -1,5 +1,5 @@
 import { useEffect, useRef } from 'react';
-import { ActivityIndicator, Text, View } from 'react-native';
+import { ActivityIndicator, Image, Text, View } from 'react-native';
 import { CommonActions } from '@react-navigation/native';
 import { NativeStackScreenProps } from '@react-navigation/native-stack';
 
@@ -43,7 +43,12 @@ export function SplashScreen({ navigation }: Props) {
 
   return (
     <View className="flex-1 items-center justify-center bg-[#0C111F] px-6">
-      <Text className="text-3xl font-extrabold text-white">CarCare Diary</Text>
+      <Image
+        source={require('../../../assets/splash-icon.png')}
+        resizeMode="contain"
+        className="h-24 w-48"
+      />
+      <Text className="mt-6 text-3xl font-extrabold text-white">CarCare Diary</Text>
       <Text className="mt-2 text-sm text-[#A3ACBF]">
         {error ? 'Something went wrong. Restarting...' : 'Preparing your garage...'}
       </Text>

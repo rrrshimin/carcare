@@ -11,6 +11,7 @@ import { ErrorState } from '@/components/feedback/error-state';
 import { LoadingState } from '@/components/feedback/loading-state';
 import { getMaintenanceSummary } from '@/features/maintenance/get-maintenance-summary';
 import { useHomeData } from '@/hooks/use-home-data';
+import { useNotifications } from '@/hooks/use-notifications';
 import { routes } from '@/navigation/routes';
 import type { CategoryDisplay, ItemDisplay } from '@/types/maintenance';
 import type { AppStackParamList } from '@/types/navigation';
@@ -40,6 +41,7 @@ function mapVehicle(row: VehicleRow, device: UserDeviceRow): Vehicle {
 
 export function HomeScreen({ navigation }: Props) {
   const { data, loading, error } = useHomeData();
+  useNotifications(data);
 
   const vehicle = useMemo(() => {
     if (!data) return null;

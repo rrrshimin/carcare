@@ -12,7 +12,7 @@ type MaintenanceItemRowProps = {
 export function MaintenanceItemRow({ item, onPressItem, onPressAddLog }: MaintenanceItemRowProps) {
   return (
     <Pressable
-      className="rounded-xl border border-[#1F2740] bg-[#0C111F] px-3 py-3"
+      className="rounded-xl  bg-[#0C111F] px-3 py-3"
       onPress={() => onPressItem(item)}
       style={({ pressed }) => ({ opacity: pressed ? 0.85 : undefined })}
     >

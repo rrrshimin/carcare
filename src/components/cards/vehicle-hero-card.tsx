@@ -24,13 +24,12 @@ export function VehicleHeroCard({ vehicle, onPressShare, onPressUpdateMileage }:
           resizeMode="cover"
         />
       ) : (
-        <View
+        <Image
+          source={require('../../../assets/vehicle-placeholder.png')}
           style={{ height: IMAGE_HEIGHT }}
-          className="w-full items-center justify-center rounded-xl border border-[#1F2740] bg-[#0C111F]"
-        >
-          <Text className="text-4xl">🚗</Text>
-          <Text className="mt-2 text-sm text-[#A3ACBF]">No vehicle photo</Text>
-        </View>
+          className="w-full rounded-xl border border-[#1F2740] bg-[#0C111F]"
+          resizeMode="cover"
+        />
       )}
 
       <Text className="mt-4 text-[28px] font-extrabold leading-tight text-white">{vehicle.name}</Text>

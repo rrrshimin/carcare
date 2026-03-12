@@ -143,7 +143,13 @@ export function AddVehicleScreen({ navigation }: Props) {
             className="h-44 w-full rounded-xl border border-[#1F2740] bg-[#141A2B]"
             resizeMode="cover"
           />
-        ) : null}
+        ) : (
+          <Image
+            source={require('../../../assets/vehicle-placeholder.png')}
+            className="h-44 w-full rounded-xl border border-[#1F2740] bg-[#141A2B]"
+            resizeMode="cover"
+          />
+        )}
       </View>
       <LabeledTextInput
         label="Vehicle Name"

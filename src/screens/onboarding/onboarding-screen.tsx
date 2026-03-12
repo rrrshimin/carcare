@@ -15,14 +15,17 @@ const slides = [
   {
     title: 'Service Made Simple',
     description: 'Track essentials for your vehicle without clutter.',
+    image: require('../../../assets/onboarding-1.png'),
   },
   {
     title: 'Track Maintenance',
     description: 'Keep every service record in one place.',
+    image: require('../../../assets/onboarding-2.png'),
   },
   {
     title: 'Protect Your Resale Value',
     description: 'Build a clean maintenance history over time.',
+    image: require('../../../assets/onboarding-3.png'),
   },
 ] as const;
 
@@ -62,6 +65,7 @@ export function OnboardingScreen({ navigation }: Props) {
       <OnboardingSlideCard
         title={currentSlide.title}
         description={currentSlide.description}
+        imageSource={currentSlide.image}
         index={index}
         total={slides.length}
       />

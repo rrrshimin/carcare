@@ -11,9 +11,9 @@ import { ScreenTitleBlock } from '@/components/layout/screen-title-block';
 import { routes } from '@/navigation/routes';
 import { getLogTypeById, type LogTypeRow } from '@/services/api/log-type-api';
 import { getCurrentVehicle } from '@/services/vehicle-service';
+import { addMaintenanceLog } from '@/features/maintenance/add-maintenance-log';
 import {
   validateLogInput,
-  submitLog,
   type CreateLogInput,
   type CreateLogValidationError,
 } from '@/services/log-service';
@@ -35,6 +35,7 @@ export function AddLogScreen({ navigation, route }: Props) {
   const [logType, setLogType] = useState<LogTypeRow | null>(null);
   const [vehicleId, setVehicleId] = useState<number | null>(null);
   const [currentOdometer, setCurrentOdometer] = useState<number>(0);
+  const [fuelType, setFuelType] = useState<string | null>(null);
   const [initLoading, setInitLoading] = useState(true);
   const [initError, setInitError] = useState<string | null>(null);
 
@@ -66,6 +67,7 @@ export function AddLogScreen({ navigation, route }: Props) {
           }
           setVehicleId(vehicle.id);
           setCurrentOdometer(vehicle.current_odometer ?? 0);
+          setFuelType(vehicle.fuel_type);
         } catch (e) {
           if (!cancelled) {
             setInitError(
@@ -121,7 +123,7 @@ export function AddLogScreen({ navigation, route }: Props) {
 
     try {
       setSaving(true);
-      await submitLog(input);
+      await addMaintenanceLog(input, logType!, fuelType);
       navigation.goBack();
     } catch (e) {
       Alert.alert(

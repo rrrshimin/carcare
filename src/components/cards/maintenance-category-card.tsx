@@ -24,7 +24,7 @@ export function MaintenanceCategoryCard({
     <ContentCard>
       <View className="flex-row items-center justify-between">
         <View className="flex-row items-center gap-3">
-          <View className="h-10 w-10 items-center justify-center rounded-full border border-[#1F2740] bg-[#0C111F]">
+          <View className="h-10 w-10 items-center justify-center rounded-full bg-[#0C111F]">
             <Text className="text-[10px] font-bold text-[#A3ACBF]">{category.icon}</Text>
           </View>
           <Text className="text-lg font-extrabold text-white">{category.name}</Text>

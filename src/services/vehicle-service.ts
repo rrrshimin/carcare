@@ -6,7 +6,8 @@ import {
   updateVehicleOdometer,
   type VehicleRow,
 } from '@/services/api/vehicle-api';
-import { appStorageKeys, getStoredJson, setStoredJson } from '@/services/storage-service';
+import { scheduleMileageReminder } from '@/features/notifications/schedule-mileage-reminder';
+import { appStorageKeys, getStoredJson, setLastMileageUpdate, setStoredJson } from '@/services/storage-service';
 import { getAppState } from '@/store/app-store';
 import type { DistanceUnit, FuelType, Transmission } from '@/types/vehicle';
 
@@ -82,6 +83,12 @@ export async function createVehicle(
     /* non-critical — default unit is fine for MVP */
   });
 
+  // Seed initial mileage reminder so users get notified even if they
+  // never manually update mileage after creating the vehicle.
+  const now = new Date().toISOString();
+  await setLastMileageUpdate(now).catch(() => {});
+  scheduleMileageReminder(now).catch(() => {});
+
   return vehicle;
 }
 
@@ -120,5 +127,10 @@ export async function updateMileage(
 ): Promise<VehicleRow> {
   const updated = await updateVehicleOdometer(vehicleId, newOdometer);
   await setStoredJson(appStorageKeys.vehicle, updated);
+
+  const now = new Date().toISOString();
+  await setLastMileageUpdate(now).catch(() => {});
+  scheduleMileageReminder(now).catch(() => {});
+
   return updated;
 }

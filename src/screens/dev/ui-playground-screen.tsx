@@ -1,5 +1,4 @@
 // DEV-ONLY: Visual sandbox for tweaking reusable components.
-// Not registered in navigation — kept intentionally for development use.
 import { useMemo, useState } from 'react';
 import { ScrollView, Text, View } from 'react-native';
 

@@ -4,6 +4,7 @@ const storageKeys = {
   onboardingCompleted: 'carcare.onboarding_completed',
   vehicle: 'carcare.vehicle',
   deviceId: 'carcare.device_id',
+  lastMileageUpdate: 'carcare.last_mileage_update',
 } as const;
 
 export async function getOnboardingCompleted(): Promise<boolean> {
@@ -21,6 +22,14 @@ export async function getDeviceId(): Promise<string | null> {
 
 export async function setDeviceId(deviceId: string): Promise<void> {
   await AsyncStorage.setItem(storageKeys.deviceId, deviceId);
+}
+
+export async function getLastMileageUpdate(): Promise<string | null> {
+  return AsyncStorage.getItem(storageKeys.lastMileageUpdate);
+}
+
+export async function setLastMileageUpdate(isoDate: string): Promise<void> {
+  await AsyncStorage.setItem(storageKeys.lastMileageUpdate, isoDate);
 }
 
 export async function getStoredJson<T>(key: string): Promise<T | null> {
