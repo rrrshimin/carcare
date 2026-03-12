@@ -1,5 +1,5 @@
 import { useMemo, useState } from 'react';
-import { Text, View } from 'react-native';
+import { Alert, Text, View } from 'react-native';
 import { NativeStackScreenProps } from '@react-navigation/native-stack';
 
 import { PrimaryButton } from '@/components/buttons/primary-button';
@@ -42,6 +42,11 @@ export function OnboardingScreen({ navigation }: Props) {
     try {
       await setOnboardingCompleted(true);
       navigation.replace(routes.addVehicle);
+    } catch {
+      Alert.alert(
+        'Something went wrong',
+        'Failed to save onboarding progress. Please try again.',
+      );
     } finally {
       setSaving(false);
     }

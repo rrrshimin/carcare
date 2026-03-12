@@ -8,6 +8,8 @@ export const theme = {
     textPrimary: '#FFFFFF',
     textSecondary: '#A3ACBF',
     warning: '#FFB020',
+    error: '#FF4D4D',
+    success: '#34D399',
   },
   spacing: {
     xs: 4,

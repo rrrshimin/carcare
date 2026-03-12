@@ -11,7 +11,7 @@ const Stack = createNativeStackNavigator<SetupFlowStackParamList>();
 // Temporary setup flow stack before launch gating logic is implemented in later phases.
 export function SetupFlowNavigator() {
   return (
-    <Stack.Navigator initialRouteName={routes.splash}>
+    <Stack.Navigator initialRouteName={routes.splash} screenOptions={{ headerShown: false }}>
       <Stack.Screen name={routes.splash} component={SplashScreen} />
       <Stack.Screen name={routes.onboarding} component={OnboardingScreen} />
       <Stack.Screen name={routes.addVehicle} component={AddVehicleScreen} />

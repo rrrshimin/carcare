@@ -3,6 +3,7 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 const storageKeys = {
   onboardingCompleted: 'carcare.onboarding_completed',
   vehicle: 'carcare.vehicle',
+  deviceId: 'carcare.device_id',
 } as const;
 
 export async function getOnboardingCompleted(): Promise<boolean> {
@@ -12,6 +13,14 @@ export async function getOnboardingCompleted(): Promise<boolean> {
 
 export async function setOnboardingCompleted(value: boolean): Promise<void> {
   await AsyncStorage.setItem(storageKeys.onboardingCompleted, String(value));
+}
+
+export async function getDeviceId(): Promise<string | null> {
+  return AsyncStorage.getItem(storageKeys.deviceId);
+}
+
+export async function setDeviceId(deviceId: string): Promise<void> {
+  await AsyncStorage.setItem(storageKeys.deviceId, deviceId);
 }
 
 export async function getStoredJson<T>(key: string): Promise<T | null> {

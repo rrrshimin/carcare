@@ -1,5 +1,6 @@
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
 
+import { theme } from '@/constants/theme';
 import { routes } from '@/navigation/routes';
 import { AddLogScreen } from '@/screens/add-log/add-log-screen';
 import { HomeScreen } from '@/screens/home/home-screen';
@@ -13,13 +14,21 @@ const Stack = createNativeStackNavigator<AppStackParamList>();
 
 export function AppNavigator() {
   return (
-    <Stack.Navigator initialRouteName={routes.home}>
-      <Stack.Screen name={routes.home} component={HomeScreen} />
-      <Stack.Screen name={routes.selectLogType} component={SelectLogTypeScreen} />
-      <Stack.Screen name={routes.addLog} component={AddLogScreen} />
-      <Stack.Screen name={routes.maintenanceHistory} component={MaintenanceHistoryScreen} />
-      <Stack.Screen name={routes.updateMileage} component={UpdateMileageScreen} />
-      <Stack.Screen name={routes.shareLink} component={ShareLinkScreen} />
+    <Stack.Navigator
+      initialRouteName={routes.home}
+      screenOptions={{
+        headerStyle: { backgroundColor: theme.colors.card },
+        headerTintColor: theme.colors.textPrimary,
+        headerShadowVisible: false,
+        headerBackTitleVisible: false,
+      }}
+    >
+      <Stack.Screen name={routes.home} component={HomeScreen} options={{ headerShown: false }} />
+      <Stack.Screen name={routes.selectLogType} component={SelectLogTypeScreen} options={{ title: 'Select Log Type' }} />
+      <Stack.Screen name={routes.addLog} component={AddLogScreen} options={{ title: 'Add Log' }} />
+      <Stack.Screen name={routes.maintenanceHistory} component={MaintenanceHistoryScreen} options={{ title: 'Maintenance History' }} />
+      <Stack.Screen name={routes.updateMileage} component={UpdateMileageScreen} options={{ title: 'Update Mileage' }} />
+      <Stack.Screen name={routes.shareLink} component={ShareLinkScreen} options={{ title: 'Share' }} />
     </Stack.Navigator>
   );
 }

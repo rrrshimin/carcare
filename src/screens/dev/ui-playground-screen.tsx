@@ -1,3 +1,5 @@
+// DEV-ONLY: Visual sandbox for tweaking reusable components.
+// Not registered in navigation — kept intentionally for development use.
 import { useMemo, useState } from 'react';
 import { ScrollView, Text, View } from 'react-native';
 
@@ -6,6 +8,7 @@ import { OutlineButton } from '@/components/buttons/outline-button';
 import { PrimaryButton } from '@/components/buttons/primary-button';
 import { ContentCard } from '@/components/cards/content-card';
 import { MaintenanceCategoryCard } from '@/components/cards/maintenance-category-card';
+import { MileageCard } from '@/components/cards/mileage-card';
 import { OnboardingSlideCard } from '@/components/cards/onboarding-slide-card';
 import { VehicleHeroCard } from '@/components/cards/vehicle-hero-card';
 import { PaginationDots } from '@/components/feedback/pagination-dots';
@@ -18,8 +21,7 @@ import { ScreenTitleBlock } from '@/components/layout/screen-title-block';
 import { HistoryLogRow } from '@/components/lists/history-log-row';
 import { LogTypeRow } from '@/components/lists/log-type-row';
 import { MaintenanceItemRow } from '@/components/lists/maintenance-item-row';
-import { maintenanceCategories, maintenanceItems } from '@/constants/maintenance-catalog';
-import { MaintenanceItem } from '@/types/maintenance';
+import type { CategoryDisplay, ItemDisplay, MaintenanceItemStatus } from '@/types/maintenance';
 import { Vehicle } from '@/types/vehicle';
 
 const demoVehicle: Vehicle = {
@@ -35,6 +37,19 @@ const demoVehicle: Vehicle = {
 
 const fuelTypeOptions = ['petrol', 'diesel', 'hybrid', 'electric'] as const;
 
+const neutralStatus: MaintenanceItemStatus = { variant: 'neutral', label: 'No logs yet' };
+const normalStatus: MaintenanceItemStatus = { variant: 'normal', label: 'Change in 4,200 km' };
+const warningStatus: MaintenanceItemStatus = { variant: 'warning', label: 'Change in 800 km' };
+const overdueStatus: MaintenanceItemStatus = { variant: 'overdue', label: 'Overdue by 300 km' };
+
+const demoCategory: CategoryDisplay = { id: 1, name: 'Engine', icon: 'EN' };
+
+const demoItems: ItemDisplay[] = [
+  { id: 1, name: 'Engine Oil', status: neutralStatus },
+  { id: 2, name: 'Oil Filter', status: neutralStatus },
+  { id: 3, name: 'Spark Plugs', status: neutralStatus },
+];
+
 export function UIPlaygroundScreen() {
   const [inputValue, setInputValue] = useState('120000');
   const [notesValue, setNotesValue] = useState('Changed at dealership.');
@@ -42,17 +57,7 @@ export function UIPlaygroundScreen() {
   const [activeDot, setActiveDot] = useState(1);
   const [buttonState, setButtonState] = useState<'idle' | 'loading'>('idle');
 
-  const sampleItem: MaintenanceItem = useMemo(
-    () => ({
-      id: 'engine-oil-demo',
-      categoryId: 'engine',
-      name: 'Engine Oil',
-      statusText: 'Service status pending',
-    }),
-    [],
-  );
-
-  const engineItems = useMemo(() => maintenanceItems.filter((item) => item.categoryId === 'engine').slice(0, 2), []);
+  const sampleItem: ItemDisplay = useMemo(() => demoItems[0], []);
 
   return (
     <ScrollView className="flex-1 bg-[#0C111F]" contentContainerStyle={{ padding: 16, gap: 12 }}>
@@ -92,10 +97,12 @@ export function UIPlaygroundScreen() {
       </ContentCard>
 
       <ContentCard>
-        <SectionHeader title="Feedback" subtitle="Status badges and pagination dots" />
+        <SectionHeader title="Status Badges" subtitle="Neutral, normal, warning, and overdue variants" />
         <View className="mt-3 flex-row flex-wrap items-center gap-3">
-          <StatusBadge label="Service status pending" />
-          <StatusBadge label="Due soon in 800 km" tone="warning" />
+          <StatusBadge label="No logs yet" variant="neutral" />
+          <StatusBadge label="Change in 4,200 km" variant="normal" />
+          <StatusBadge label="Change in 800 km" variant="warning" />
+          <StatusBadge label="Overdue by 300 km" variant="overdue" />
         </View>
         <View className="mt-4">
           <PaginationDots count={3} activeIndex={activeDot} />
@@ -119,22 +126,37 @@ export function UIPlaygroundScreen() {
         onPressUpdateMileage={() => undefined}
       />
 
+      <MileageCard
+        currentOdometer={demoVehicle.currentOdometer}
+        unit={demoVehicle.unit}
+        onPressUpdate={() => undefined}
+      />
+
       <MaintenanceCategoryCard
-        category={maintenanceCategories[0]}
-        items={engineItems}
+        category={demoCategory}
+        items={demoItems}
         onPressNewLog={() => undefined}
         onPressItem={() => undefined}
         onPressAddLog={() => undefined}
       />
 
-      <MaintenanceItemRow item={sampleItem} onPressItem={() => undefined} onPressAddLog={() => undefined} />
+      <ContentCard>
+        <SectionHeader title="Item Row Variants" />
+        <View className="mt-3 gap-2">
+          <MaintenanceItemRow item={{ ...sampleItem, status: neutralStatus }} onPressItem={() => undefined} onPressAddLog={() => undefined} />
+          <MaintenanceItemRow item={{ ...sampleItem, status: normalStatus }} onPressItem={() => undefined} onPressAddLog={() => undefined} />
+          <MaintenanceItemRow item={{ ...sampleItem, status: warningStatus }} onPressItem={() => undefined} onPressAddLog={() => undefined} />
+          <MaintenanceItemRow item={{ ...sampleItem, status: overdueStatus }} onPressItem={() => undefined} onPressAddLog={() => undefined} />
+        </View>
+      </ContentCard>
 
       <LogTypeRow title="Engine Oil" subtitle="Open Add Log form" onPress={() => undefined} />
 
       <HistoryLogRow
+        specLabel="Oil Type"
         specification="5W-30"
-        mileage="141,200 km"
-        date="18 Dec 2024"
+        mileage={141200}
+        date="2024-12-18"
         notes="Changed at dealership"
       />
 

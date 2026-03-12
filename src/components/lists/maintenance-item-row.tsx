@@ -1,29 +1,37 @@
 import { Pressable, Text, View } from 'react-native';
 
-import { ActionChipButton } from '@/components/buttons/action-chip-button';
-import { ContentCard } from '@/components/cards/content-card';
 import { StatusBadge } from '@/components/feedback/status-badge';
-import { MaintenanceItem } from '@/types/maintenance';
+import type { ItemDisplay } from '@/types/maintenance';
 
 type MaintenanceItemRowProps = {
-  item: MaintenanceItem;
-  onPressItem: (item: MaintenanceItem) => void;
-  onPressAddLog: (item: MaintenanceItem) => void;
+  item: ItemDisplay;
+  onPressItem: (item: ItemDisplay) => void;
+  onPressAddLog: (item: ItemDisplay) => void;
 };
 
 export function MaintenanceItemRow({ item, onPressItem, onPressAddLog }: MaintenanceItemRowProps) {
   return (
-    <ContentCard className="rounded-xl bg-[#0C111F] px-3 py-3">
-      <Pressable onPress={() => onPressItem(item)}>
-        <View className="flex-row items-center justify-between">
+    <Pressable
+      className="rounded-xl border border-[#1F2740] bg-[#0C111F] px-3 py-3"
+      onPress={() => onPressItem(item)}
+      style={({ pressed }) => ({ opacity: pressed ? 0.85 : undefined })}
+    >
+      <View className="flex-row items-center justify-between">
+        <View className="flex-1">
           <Text className="text-base font-semibold text-white">{item.name}</Text>
-          <Text className="text-sm text-[#A3ACBF]">{'>'}</Text>
+          <View className="mt-1">
+            <StatusBadge label={item.status.label} variant={item.status.variant} />
+          </View>
         </View>
-        <View className="mt-1">
-          <StatusBadge label={item.statusText} />
-        </View>
-      </Pressable>
-      <ActionChipButton label="Add Log" className="mt-3 bg-[#141A2B]" onPress={() => onPressAddLog(item)} />
-    </ContentCard>
+
+        <Pressable
+          className="ml-3 rounded-lg border border-[#1F2740] bg-[#141A2B] px-3 py-2"
+          onPress={() => onPressAddLog(item)}
+          style={({ pressed }) => ({ opacity: pressed ? 0.85 : undefined })}
+        >
+          <Text className="text-xs font-semibold text-[#367DFF]">Add Log</Text>
+        </Pressable>
+      </View>
+    </Pressable>
   );
 }

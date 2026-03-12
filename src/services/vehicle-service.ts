@@ -1,33 +1,124 @@
+import { updateDeviceUnit } from '@/services/api/device-api';
+import { uploadVehicleImage } from '@/services/api/storage-api';
+import {
+  createVehicleRecord,
+  getVehicleByDeviceId,
+  updateVehicleOdometer,
+  type VehicleRow,
+} from '@/services/api/vehicle-api';
 import { appStorageKeys, getStoredJson, setStoredJson } from '@/services/storage-service';
-import { Vehicle } from '@/types/vehicle';
+import { getAppState } from '@/store/app-store';
+import type { DistanceUnit, FuelType, Transmission } from '@/types/vehicle';
 
 export type CreateVehicleInput = {
   name: string;
   year: number;
-  fuelType: Vehicle['fuelType'];
-  transmission: Vehicle['transmission'];
+  fuelType: FuelType;
+  transmission: Transmission;
   currentOdometer: number;
-  unit: Vehicle['unit'];
+  unit: DistanceUnit;
   imageUri?: string;
 };
 
-export async function getCurrentVehicle(): Promise<Vehicle | null> {
-  return getStoredJson<Vehicle>(appStorageKeys.vehicle);
+/**
+ * Returns the current vehicle, checking local cache first and falling
+ * back to a backend query by device ID.  This ensures the app never
+ * misses a vehicle that exists server-side.
+ */
+export async function getCurrentVehicle(): Promise<VehicleRow | null> {
+  const cached = await getStoredJson<VehicleRow>(appStorageKeys.vehicle);
+  if (cached) return cached;
+
+  const { deviceId } = getAppState();
+  if (!deviceId) return null;
+
+  const remote = await getVehicleByDeviceId(deviceId);
+  if (remote) {
+    await setStoredJson(appStorageKeys.vehicle, remote);
+  }
+  return remote;
 }
 
-export async function createVehicle(input: CreateVehicleInput): Promise<Vehicle> {
-  const vehicle: Vehicle = {
-    id: `vehicle-${Date.now()}`,
+/**
+ * Returns true when a vehicle exists for the current device.
+ * Checks backend directly using the given deviceId — local cache is
+ * only a fast hint; the backend is the source of truth.
+ */
+export async function vehicleExistsForDevice(deviceId: string): Promise<boolean> {
+  const remote = await getVehicleByDeviceId(deviceId);
+  if (remote) {
+    await setStoredJson(appStorageKeys.vehicle, remote);
+    return true;
+  }
+  return false;
+}
+
+export async function createVehicle(
+  input: CreateVehicleInput,
+): Promise<VehicleRow> {
+  const { deviceId } = getAppState();
+  if (!deviceId) {
+    throw new Error('Device identity not established.');
+  }
+
+  let imageUrl: string | null = null;
+  if (input.imageUri) {
+    imageUrl = await uploadVehicleImage(input.imageUri);
+  }
+
+  const vehicle = await createVehicleRecord({
     name: input.name.trim(),
     year: input.year,
-    fuelType: input.fuelType,
+    fuel_type: input.fuelType,
     transmission: input.transmission,
-    currentOdometer: input.currentOdometer,
-    unit: input.unit,
-    imageUri: input.imageUri?.trim() || undefined,
-    createdAt: new Date().toISOString(),
-  };
+    current_odometer: input.currentOdometer,
+    image_url: imageUrl,
+    user_id_link: deviceId,
+  });
 
   await setStoredJson(appStorageKeys.vehicle, vehicle);
+
+  await updateDeviceUnit(deviceId, input.unit).catch(() => {
+    /* non-critical — default unit is fine for MVP */
+  });
+
   return vehicle;
+}
+
+// ── Update Mileage ──────────────────────────────────────────────────
+
+export type MileageValidationError = {
+  message: string;
+};
+
+export function validateMileageInput(
+  raw: string,
+  currentOdometer: number,
+): MileageValidationError | null {
+  const trimmed = raw.trim();
+  if (!trimmed) {
+    return { message: 'Mileage value is required.' };
+  }
+
+  const value = Number(trimmed);
+  if (isNaN(value)) {
+    return { message: 'Mileage must be a number.' };
+  }
+  if (value < 0) {
+    return { message: 'Mileage cannot be negative.' };
+  }
+  if (value < currentOdometer) {
+    return { message: `Mileage cannot be lower than current value (${currentOdometer.toLocaleString()}).` };
+  }
+
+  return null;
+}
+
+export async function updateMileage(
+  vehicleId: number,
+  newOdometer: number,
+): Promise<VehicleRow> {
+  const updated = await updateVehicleOdometer(vehicleId, newOdometer);
+  await setStoredJson(appStorageKeys.vehicle, updated);
+  return updated;
 }

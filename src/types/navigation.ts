@@ -9,16 +9,16 @@ export type SetupFlowStackParamList = {
 export type AppStackParamList = {
   [routes.home]: undefined;
   [routes.selectLogType]: {
-    categoryId?: string;
-    categoryName?: string;
+    categoryId: number;
+    categoryName: string;
   };
   [routes.addLog]: {
-    logTypeId?: string;
-    logTypeName?: string;
+    logTypeId: number;
+    logTypeName: string;
   };
   [routes.maintenanceHistory]: {
-    logTypeId?: string;
-    logTypeName?: string;
+    logTypeId: number;
+    logTypeName: string;
   };
   [routes.updateMileage]: undefined;
   [routes.shareLink]: undefined;

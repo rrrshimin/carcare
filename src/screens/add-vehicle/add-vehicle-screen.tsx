@@ -1,5 +1,6 @@
 import { useMemo, useState } from 'react';
 import { Image, ScrollView, Text, View } from 'react-native';
+import { CommonActions } from '@react-navigation/native';
 import { NativeStackScreenProps } from '@react-navigation/native-stack';
 import * as ImagePicker from 'expo-image-picker';
 
@@ -10,7 +11,7 @@ import { OptionPillGroup } from '@/components/inputs/option-pill-group';
 import { ScreenTitleBlock } from '@/components/layout/screen-title-block';
 import { routes } from '@/navigation/routes';
 import { createVehicle } from '@/services/vehicle-service';
-import { RootStackParamList, SetupFlowStackParamList } from '@/types/navigation';
+import { SetupFlowStackParamList } from '@/types/navigation';
 import { DistanceUnit, FuelType, Transmission } from '@/types/vehicle';
 
 type Props = NativeStackScreenProps<SetupFlowStackParamList, typeof routes.addVehicle>;
@@ -109,10 +110,16 @@ export function AddVehicleScreen({ navigation }: Props) {
         unit: form.unit,
       });
 
-      const rootNavigation = navigation.getParent<
-        import('@react-navigation/native').NavigationProp<RootStackParamList>
-      >();
-      rootNavigation?.navigate(routes.appFlow);
+      navigation.dispatch(
+        CommonActions.reset({
+          index: 0,
+          routes: [{ name: routes.appFlow }],
+        }),
+      );
+    } catch (e) {
+      setError(
+        e instanceof Error ? e.message : 'Failed to create vehicle. Please try again.',
+      );
     } finally {
       setSubmitting(false);
     }

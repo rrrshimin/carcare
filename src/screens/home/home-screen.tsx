@@ -1,81 +1,134 @@
-import { useMemo, useEffect, useState } from 'react';
-import { ScrollView, Text } from 'react-native';
-import { NativeStackScreenProps } from '@react-navigation/native-stack';
+import { useMemo } from 'react';
+import { ScrollView, Text, View } from 'react-native';
+import { CommonActions } from '@react-navigation/native';
+import type { NativeStackScreenProps } from '@react-navigation/native-stack';
 
-import { ActionChipButton } from '@/components/buttons/action-chip-button';
-import { ContentCard } from '@/components/cards/content-card';
+import { PrimaryButton } from '@/components/buttons/primary-button';
 import { MaintenanceCategoryCard } from '@/components/cards/maintenance-category-card';
+import { MileageCard } from '@/components/cards/mileage-card';
 import { VehicleHeroCard } from '@/components/cards/vehicle-hero-card';
-import { ScreenTitleBlock } from '@/components/layout/screen-title-block';
-import { SectionHeader } from '@/components/layout/section-header';
-import { maintenanceCategories, maintenanceItems } from '@/constants/maintenance-catalog';
+import { ErrorState } from '@/components/feedback/error-state';
+import { LoadingState } from '@/components/feedback/loading-state';
+import { getMaintenanceSummary } from '@/features/maintenance/get-maintenance-summary';
+import { useHomeData } from '@/hooks/use-home-data';
 import { routes } from '@/navigation/routes';
-import { getCurrentVehicle } from '@/services/vehicle-service';
-import { MaintenanceCategory, MaintenanceItem } from '@/types/maintenance';
-import { AppStackParamList } from '@/types/navigation';
-import { Vehicle } from '@/types/vehicle';
+import type { CategoryDisplay, ItemDisplay } from '@/types/maintenance';
+import type { AppStackParamList } from '@/types/navigation';
+import type { DistanceUnit, FuelType, Transmission, Vehicle } from '@/types/vehicle';
+import type { VehicleRow } from '@/services/api/vehicle-api';
+import type { UserDeviceRow } from '@/services/api/device-api';
 
 type Props = NativeStackScreenProps<AppStackParamList, typeof routes.home>;
 
+// ── Helpers ─────────────────────────────────────────────────────────
+
+function mapVehicle(row: VehicleRow, device: UserDeviceRow): Vehicle {
+  return {
+    id: String(row.id),
+    name: row.name ?? '',
+    year: row.year ?? 0,
+    fuelType: (row.fuel_type as FuelType) ?? 'petrol',
+    transmission: (row.transmission as Transmission) ?? 'manual',
+    currentOdometer: row.current_odometer ?? 0,
+    unit: (device.unit as DistanceUnit) ?? 'km',
+    imageUri: row.image_url ?? undefined,
+    createdAt: row.created_at,
+  };
+}
+
+// ── Screen ──────────────────────────────────────────────────────────
+
 export function HomeScreen({ navigation }: Props) {
-  const [vehicle, setVehicle] = useState<Vehicle | null>(null);
+  const { data, loading, error } = useHomeData();
 
-  useEffect(() => {
-    getCurrentVehicle().then(setVehicle).catch(() => {
-      setVehicle(null);
+  const vehicle = useMemo(() => {
+    if (!data) return null;
+    return mapVehicle(data.vehicle, data.device);
+  }, [data]);
+
+  const summary = useMemo(() => {
+    if (!data) return [];
+    return getMaintenanceSummary(data);
+  }, [data]);
+
+  // ── Navigation handlers ─────────────────────────────────────────
+
+  function handlePressNewLog(category: CategoryDisplay) {
+    navigation.navigate(routes.selectLogType, {
+      categoryId: category.id,
+      categoryName: category.name,
     });
-  }, []);
-
-  const groupedItems = useMemo(() => {
-    return maintenanceCategories.map((category) => ({
-      category,
-      items: maintenanceItems.filter((item) => item.categoryId === category.id),
-    }));
-  }, []);
-
-  function handlePressNewLog(category: MaintenanceCategory) {
-    navigation.navigate(routes.selectLogType, { categoryId: category.id, categoryName: category.name });
   }
 
-  function handlePressItem(item: MaintenanceItem) {
-    navigation.navigate(routes.maintenanceHistory, { logTypeId: item.id, logTypeName: item.name });
+  function handlePressItem(item: ItemDisplay) {
+    navigation.navigate(routes.maintenanceHistory, {
+      logTypeId: item.id,
+      logTypeName: item.name,
+    });
   }
 
-  function handlePressAddLog(item: MaintenanceItem) {
-    navigation.navigate(routes.addLog, { logTypeId: item.id, logTypeName: item.name });
+  function handlePressAddLog(item: ItemDisplay) {
+    navigation.navigate(routes.addLog, {
+      logTypeId: item.id,
+      logTypeName: item.name,
+    });
   }
+
+  if (loading) return <LoadingState />;
+  if (error) return <ErrorState message={error} />;
+  if (!vehicle) {
+    return (
+      <View className="flex-1 items-center justify-center bg-[#0C111F] px-6">
+        <Text className="text-lg font-semibold text-white">No vehicle found</Text>
+        <Text className="mt-2 text-center text-sm text-[#A3ACBF]">
+          Add a vehicle to start tracking maintenance.
+        </Text>
+        <View className="mt-6 w-full">
+          <PrimaryButton
+            label="Add Vehicle"
+            onPress={() =>
+              navigation.dispatch(
+                CommonActions.reset({
+                  index: 0,
+                  routes: [{ name: routes.setupFlow }],
+                }),
+              )
+            }
+          />
+        </View>
+      </View>
+    );
+  }
+
+  // ── Main content ────────────────────────────────────────────────
 
   return (
-    <ScrollView className="flex-1 bg-[#0C111F]" contentContainerStyle={{ padding: 16, gap: 12 }}>
-      <ScreenTitleBlock title="Home" />
-      {vehicle ? (
-        <>
-          <VehicleHeroCard
-            vehicle={vehicle}
-            onPressShare={() => navigation.navigate(routes.shareLink)}
-            onPressUpdateMileage={() => navigation.navigate(routes.updateMileage)}
-          />
+    <ScrollView
+      className="flex-1 bg-[#0C111F]"
+      contentContainerStyle={{ paddingHorizontal: 16, paddingBottom: 32, gap: 16 }}
+    >
+      <VehicleHeroCard
+        vehicle={vehicle}
+        onPressShare={() => navigation.navigate(routes.shareLink)}
+        onPressUpdateMileage={() => navigation.navigate(routes.updateMileage)}
+      />
 
-          <ContentCard>
-            <SectionHeader title="Mileage" />
-            <Text className="mt-2 text-sm text-[#A3ACBF]">Current mileage: {vehicle.currentOdometer} {vehicle.unit}</Text>
-            <ActionChipButton label="Update" className="mt-3" onPress={() => navigation.navigate(routes.updateMileage)} />
-          </ContentCard>
+      <MileageCard
+        currentOdometer={vehicle.currentOdometer}
+        unit={vehicle.unit}
+        onPressUpdate={() => navigation.navigate(routes.updateMileage)}
+      />
 
-          {groupedItems.map(({ category, items }) => (
-            <MaintenanceCategoryCard
-              key={category.id}
-              category={category}
-              items={items}
-              onPressNewLog={handlePressNewLog}
-              onPressItem={handlePressItem}
-              onPressAddLog={handlePressAddLog}
-            />
-          ))}
-        </>
-      ) : (
-        <Text className="mt-4 text-base text-[#A3ACBF]">No vehicle found.</Text>
-      )}
+      {summary.map((group) => (
+        <MaintenanceCategoryCard
+          key={group.id}
+          category={group}
+          items={group.items}
+          onPressNewLog={handlePressNewLog}
+          onPressItem={handlePressItem}
+          onPressAddLog={handlePressAddLog}
+        />
+      ))}
     </ScrollView>
   );
 }

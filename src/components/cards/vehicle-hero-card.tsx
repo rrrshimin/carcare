@@ -1,4 +1,4 @@
-import { Image, Text, View } from 'react-native';
+import { Dimensions, Image, Text, View } from 'react-native';
 
 import { OutlineButton } from '@/components/buttons/outline-button';
 import { PrimaryButton } from '@/components/buttons/primary-button';
@@ -11,28 +11,40 @@ type VehicleHeroCardProps = {
   onPressUpdateMileage: () => void;
 };
 
+const IMAGE_HEIGHT = Math.round(Dimensions.get('window').height * 0.3);
+
 export function VehicleHeroCard({ vehicle, onPressShare, onPressUpdateMileage }: VehicleHeroCardProps) {
   return (
     <ContentCard>
       {vehicle.imageUri ? (
         <Image
           source={{ uri: vehicle.imageUri }}
-          className="h-52 w-full rounded-xl border border-[#1F2740] bg-[#0C111F]"
+          style={{ height: IMAGE_HEIGHT }}
+          className="w-full rounded-xl border border-[#1F2740] bg-[#0C111F]"
           resizeMode="cover"
         />
       ) : (
-        <View className="h-52 w-full items-center justify-center rounded-xl border border-[#1F2740] bg-[#0C111F]">
-          <Text className="text-sm font-semibold text-[#A3ACBF]">No vehicle photo</Text>
+        <View
+          style={{ height: IMAGE_HEIGHT }}
+          className="w-full items-center justify-center rounded-xl border border-[#1F2740] bg-[#0C111F]"
+        >
+          <Text className="text-4xl">🚗</Text>
+          <Text className="mt-2 text-sm text-[#A3ACBF]">No vehicle photo</Text>
         </View>
       )}
 
-      <Text className="mt-4 text-2xl font-extrabold text-white">{vehicle.name}</Text>
-      <Text className="mt-2 text-sm text-[#A3ACBF]">
-        {vehicle.year} - {vehicle.fuelType} - {vehicle.transmission}
+      <Text className="mt-4 text-[28px] font-extrabold leading-tight text-white">{vehicle.name}</Text>
+      <Text className="mt-1 text-sm text-[#A3ACBF]">
+        {vehicle.year} · {vehicle.fuelType} · {vehicle.transmission}
       </Text>
 
-      <View className="mt-4 flex-row gap-2">
-        <OutlineButton className="flex-1 items-center bg-[#0C111F]" textClassName="text-white" label="Share" onPress={onPressShare} />
+      <View className="mt-4 flex-row gap-3">
+        <OutlineButton
+          className="flex-1 items-center bg-[#0C111F]"
+          textClassName="text-center text-white"
+          label="Share"
+          onPress={onPressShare}
+        />
         <PrimaryButton className="flex-1" label="Update Mileage" onPress={onPressUpdateMileage} />
       </View>
     </ContentCard>
