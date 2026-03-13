@@ -11,6 +11,11 @@ function capitalize(str: string): string {
   return str.charAt(0).toUpperCase() + str.slice(1);
 }
 
+// ── Pill-style selector group ────────────────────────────────────────
+// Reused on Add Vehicle: Fuel Type, Transmission.
+// Selected pill: brand blue #0051E8 fill, white text.
+// Unselected pill: card fill #141A2B, border #1F2740, gray text.
+// Pill height: min-h-10 (40px). Radius: rounded-xl (12px).
 export function OptionPillGroup<T extends string>({
   label,
   options,
@@ -20,6 +25,7 @@ export function OptionPillGroup<T extends string>({
   return (
     <View className="gap-2">
       {label ? <Text className="text-sm text-[#A3ACBF]">{label}</Text> : null}
+      {/* flex-wrap allows pills to flow to next line on narrow screens */}
       <View className="flex-row flex-wrap gap-2">
         {options.map((option) => {
           const isSelected = selected === option;

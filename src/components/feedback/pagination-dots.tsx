@@ -5,6 +5,10 @@ type PaginationDotsProps = {
   activeIndex: number;
 };
 
+// ── Pagination dots (onboarding) ─────────────────────────────────────
+// Active dot: pill shape (h-2 w-8 = 8×32px), brand blue #0051E8.
+// Inactive dot: circle (h-2 w-2 = 8×8px), border color #1F2740.
+// gap-2 (8px) between dots. Centered horizontally.
 export function PaginationDots({ count, activeIndex }: PaginationDotsProps) {
   return (
     <View className="flex-row items-center justify-center gap-2">

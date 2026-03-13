@@ -16,6 +16,10 @@ import type { AppStackParamList } from '@/types/navigation';
 
 type Props = NativeStackScreenProps<AppStackParamList, typeof routes.updateMileage>;
 
+function formatWithCommas(digits: string): string {
+  return digits.replace(/\B(?=(\d{3})+(?!\d))/g, ',');
+}
+
 export function UpdateMileageScreen({ navigation }: Props) {
   const [vehicle, setVehicle] = useState<VehicleRow | null>(null);
   const [initLoading, setInitLoading] = useState(true);
@@ -64,7 +68,8 @@ export function UpdateMileageScreen({ navigation }: Props) {
   async function handleSave() {
     if (!vehicle) return;
 
-    const error = validateMileageInput(mileage, currentOdometer);
+    const rawMileage = mileage.replace(/,/g, '').trim();
+    const error = validateMileageInput(rawMileage, currentOdometer);
     if (error) {
       setValidationError(error.message);
       return;
@@ -73,7 +78,7 @@ export function UpdateMileageScreen({ navigation }: Props) {
 
     try {
       setSaving(true);
-      await updateMileage(vehicle.id, Number(mileage.trim()));
+      await updateMileage(vehicle.id, Number(rawMileage));
       navigation.goBack();
     } catch (e) {
       Alert.alert(
@@ -106,13 +111,17 @@ export function UpdateMileageScreen({ navigation }: Props) {
     );
   }
 
-  // ── Form ───────────────────────────────────────────────────────
+  // ── Update Mileage form layout ──────────────────────────────────────
+  // ScrollView: 16px padding, 16px gap. Two sections: current odometer display + new value input.
+  // Current odometer card: card fill/border, label 14px gray, value 18px SemiBold white.
+  // Validation error: 12px red text below input.
   return (
     <ScrollView
       className="flex-1 bg-[#0C111F]"
       contentContainerStyle={{ padding: 16, gap: 16 }}
       keyboardShouldPersistTaps="handled"
     >
+      {/* Read-only current odometer display card */}
       <View className="rounded-xl border border-[#1F2740] bg-[#141A2B] px-4 py-3">
         <Text className="text-sm text-[#A3ACBF]">Current odometer</Text>
         <Text className="mt-1 text-lg font-semibold text-white">
@@ -125,9 +134,10 @@ export function UpdateMileageScreen({ navigation }: Props) {
           label="New Mileage Value"
           placeholder="Enter new mileage"
           keyboardType="number-pad"
-          value={mileage}
+          value={mileage ? formatWithCommas(mileage) : ''}
           onChangeText={(text) => {
-            setMileage(text);
+            const digits = text.replace(/\D/g, '');
+            setMileage(digits);
             if (validationError) setValidationError(null);
           }}
         />

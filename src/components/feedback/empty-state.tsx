@@ -5,6 +5,10 @@ type EmptyStateProps = {
   message?: string;
 };
 
+// ── Full-screen empty state ──────────────────────────────────────────
+// Centered placeholder when there's no data (e.g. no maintenance history).
+// flex-1 fills entire screen area. Background matches app dark theme.
+// Title: 18px SemiBold white. Message: 14px secondary gray.
 export function EmptyState({ title, message }: EmptyStateProps) {
   return (
     <View className="flex-1 items-center justify-center bg-[#0C111F] px-6">

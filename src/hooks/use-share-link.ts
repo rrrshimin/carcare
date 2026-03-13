@@ -78,7 +78,7 @@ export function useShareLink() {
     Alert.alert('Stop Sharing', 'The public link will stop working. Continue?', [
       { text: 'Cancel', style: 'cancel' },
       {
-        text: 'Stop',
+        text: 'Stop Sharing',
         style: 'destructive',
         onPress: async () => {
           setState((s) => ({ ...s, actionLoading: true, error: null }));

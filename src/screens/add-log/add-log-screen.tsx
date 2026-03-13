@@ -9,6 +9,8 @@ import { LabeledMultilineInput } from '@/components/inputs/labeled-multiline-inp
 import { LabeledTextInput } from '@/components/inputs/labeled-text-input';
 import { routes } from '@/navigation/routes';
 import { getLogTypeById, type LogTypeRow } from '@/services/api/log-type-api';
+import { getDeviceByDeviceId } from '@/services/api/device-api';
+import { getDeviceId } from '@/services/storage-service';
 import { getCurrentVehicle } from '@/services/vehicle-service';
 import { addMaintenanceLog } from '@/features/maintenance/add-maintenance-log';
 import {
@@ -27,6 +29,10 @@ function toISODate(date: Date): string {
   return `${y}-${m}-${d}`;
 }
 
+function formatWithCommas(digits: string): string {
+  return digits.replace(/\B(?=(\d{3})+(?!\d))/g, ',');
+}
+
 export function AddLogScreen({ navigation, route }: Props) {
   const { logTypeId, logTypeName } = route.params;
 
@@ -35,6 +41,7 @@ export function AddLogScreen({ navigation, route }: Props) {
   const [vehicleId, setVehicleId] = useState<number | null>(null);
   const [currentOdometer, setCurrentOdometer] = useState<number>(0);
   const [fuelType, setFuelType] = useState<string | null>(null);
+  const [unit, setUnit] = useState<string>('km');
   const [initLoading, setInitLoading] = useState(true);
   const [initError, setInitError] = useState<string | null>(null);
 
@@ -47,9 +54,11 @@ export function AddLogScreen({ navigation, route }: Props) {
           setInitLoading(true);
           setInitError(null);
 
-          const [lt, vehicle] = await Promise.all([
+          const deviceId = await getDeviceId();
+          const [lt, vehicle, device] = await Promise.all([
             getLogTypeById(logTypeId),
             getCurrentVehicle(),
+            deviceId ? getDeviceByDeviceId(deviceId) : null,
           ]);
 
           if (cancelled) return;
@@ -67,6 +76,7 @@ export function AddLogScreen({ navigation, route }: Props) {
           setVehicleId(vehicle.id);
           setCurrentOdometer(vehicle.current_odometer ?? 0);
           setFuelType(vehicle.fuel_type);
+          setUnit(device?.unit ?? 'km');
         } catch (e) {
           if (!cancelled) {
             setInitError(
@@ -104,7 +114,7 @@ export function AddLogScreen({ navigation, route }: Props) {
     const input: CreateLogInput = {
       carId: vehicleId,
       logTypeId,
-      odoLog: mileage.trim() ? Number(mileage.trim()) : null,
+      odoLog: mileage.trim() ? Number(mileage.replace(/,/g, '').trim()) : null,
       changeDate: date ? toISODate(date) : '',
       specs: specification,
       notes,
@@ -123,7 +133,7 @@ export function AddLogScreen({ navigation, route }: Props) {
     try {
       setSaving(true);
       await addMaintenanceLog(input, logType!, fuelType);
-      navigation.goBack();
+      navigation.popToTop();
     } catch (e) {
       Alert.alert(
         'Save Failed',
@@ -153,24 +163,30 @@ export function AddLogScreen({ navigation, route }: Props) {
     );
   }
 
-  // ── Form ───────────────────────────────────────────────────────
+  // ── Add Log form layout ─────────────────────────────────────────────
+  // ScrollView: 16px padding, 12px gap between fields.
+  // Log type name shown at top as secondary text label.
+  // Fields: mileage (LabeledTextInput), date (DateInputField),
+  //         spec (LabeledTextInput with dynamic label), notes (LabeledMultilineInput).
+  // Validation errors: 12px red text below respective fields.
   return (
     <ScrollView
       className="flex-1 bg-[#0C111F]"
-      contentContainerStyle={{ padding: 16, gap: 12 }}
+      contentContainerStyle={{ padding: 12, gap: 10 }}
       keyboardShouldPersistTaps="handled"
     >
       <Text className="text-sm text-[#A3ACBF]">{logTypeName}</Text>
 
       <LabeledTextInput
-        label={`Changed At (${isMileageBased ? 'km/mi' : 'odometer'})`}
-        value={mileage}
+        label={`Changed At (${isMileageBased ? unit : 'odometer'})`}
+        value={mileage ? formatWithCommas(mileage) : ''}
         onChangeText={(text) => {
-          setMileage(text);
+          const digits = text.replace(/\D/g, '');
+          setMileage(digits);
           if (validationError?.field === 'mileage') setValidationError(null);
         }}
         keyboardType="number-pad"
-        placeholder="e.g. 45000"
+        placeholder="0"
       />
       {validationError?.field === 'mileage' ? (
         <Text className="-mt-1 text-xs text-red-400">{validationError.message}</Text>
@@ -205,6 +221,7 @@ export function AddLogScreen({ navigation, route }: Props) {
       ) : null}
 
       <PrimaryButton
+       className="mt-4"
         label={saving ? 'Saving…' : 'Save'}
         onPress={handleSave}
         disabled={saving}

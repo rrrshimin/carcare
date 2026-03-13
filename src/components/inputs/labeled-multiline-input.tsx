@@ -7,6 +7,10 @@ type LabeledMultilineInputProps = {
   placeholder?: string;
 };
 
+// ── Multiline text input ─────────────────────────────────────────────
+// Used for "Notes" field on Add Log screen.
+// min-h-24 (96px) gives initial height. textAlignVertical="top" pins cursor to top-left.
+// Shares same fill/border/radius as LabeledTextInput for consistency.
 export function LabeledMultilineInput({
   label,
   value,

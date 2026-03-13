@@ -5,6 +5,9 @@ type ErrorStateProps = {
   message?: string;
 };
 
+// ── Full-screen error state ──────────────────────────────────────────
+// Displayed when data fetch fails (Home, Maintenance History, etc.).
+// Same layout as EmptyState. Visually identical — differentiated by content only.
 export function ErrorState({
   title = 'Something went wrong',
   message,

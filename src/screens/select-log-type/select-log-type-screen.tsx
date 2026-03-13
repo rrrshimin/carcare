@@ -64,6 +64,11 @@ export function SelectLogTypeScreen({ navigation, route }: Props) {
     );
   }
 
+  // ── Select Log Type layout ───────────────────────────────────────────
+  // ScrollView with 16px padding all around, 12px gap between rows.
+  // Category name label at top: 14px secondary gray.
+  // Each LogTypeRow is a card-styled pressable row.
+  // Empty state: single ContentCard with gray message.
   return (
     <ScrollView className="flex-1 bg-[#0C111F]" contentContainerStyle={{ padding: 16, gap: 12 }}>
       <Text className="text-sm text-[#A3ACBF]">{categoryName}</Text>

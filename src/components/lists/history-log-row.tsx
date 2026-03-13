@@ -13,6 +13,11 @@ type HistoryLogRowProps = {
   unit?: string;
 };
 
+// ── History log entry card ───────────────────────────────────────────
+// Shown on MaintenanceHistoryScreen. One card per past log entry.
+// Wraps ContentCard (inherits card fill, radius, padding).
+// Data lines: 14px white. Notes line: 14px secondary gray.
+// mt-1 (4px) between lines. Each field conditionally rendered.
 export function HistoryLogRow({
   specLabel = 'Specification',
   specification,

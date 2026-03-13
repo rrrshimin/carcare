@@ -5,6 +5,10 @@ type SectionHeaderProps = {
   subtitle?: string;
 };
 
+// ── Section header ───────────────────────────────────────────────────
+// Lightweight heading for content sections within a screen.
+// Title: 18px Bold white. Subtitle: 14px secondary gray.
+// Currently not used on main screens but available for future sections.
 export function SectionHeader({ title, subtitle }: SectionHeaderProps) {
   return (
     <View>

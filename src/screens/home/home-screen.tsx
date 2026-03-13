@@ -83,6 +83,7 @@ export function HomeScreen({ navigation }: Props) {
     });
   }
 
+  // Loading / error / no-vehicle states (full-screen, centered)
   if (loading) return <LoadingState />;
   if (error) return <ErrorState message={error} />;
   if (!vehicle) {
@@ -109,26 +110,30 @@ export function HomeScreen({ navigation }: Props) {
     );
   }
 
-  // ── Main content ────────────────────────────────────────────────
-
+  // ── Home main layout ─────────────────────────────────────────────
+  // Full-screen scroll. No header (headerShown: false in AppNavigator).
+  // VehicleHeroCard is full-bleed at top. Below: 16px horizontal padding, 16px gap between cards.
+  // paddingBottom 32px gives scroll overrun at bottom.
   return (
     <ScrollView
       className="flex-1 bg-[#0C111F]"
       contentContainerStyle={{ paddingBottom: 32 }}
     >
+      {/* Full-bleed hero: vehicle image + info card (no side padding) */}
       <VehicleHeroCard
         vehicle={vehicle}
         onPressShare={() => navigation.navigate(routes.shareLink)}
-        onPressUpdateMileage={() => navigation.navigate(routes.updateMileage)}
       />
 
-      <View style={{ paddingHorizontal: 16, gap: 16, marginTop: 16 }}>
+      {/* Content below hero: 16px side padding, 16px vertical gap between cards */}
+      <View style={{ paddingHorizontal: 16, gap: 13, marginTop: 13 }}>
         <MileageCard
           currentOdometer={vehicle.currentOdometer}
           unit={vehicle.unit}
           onPressUpdate={() => navigation.navigate(routes.updateMileage)}
         />
 
+        {/* One MaintenanceCategoryCard per category with items */}
         {filteredSummary.map((group) => (
           <MaintenanceCategoryCard
             key={group.id}

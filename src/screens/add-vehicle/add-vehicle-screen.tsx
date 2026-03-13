@@ -141,6 +141,8 @@ export function AddVehicleScreen({ navigation }: Props) {
     }
   }
 
+  // Inline km/mi toggle rendered inside the odometer input's rightElement slot.
+  // Selected: brand blue fill. Unselected: dark background fill.
   const unitToggle = (
     <View className="mr-2 flex-row items-center gap-1">
       {unitOptions.map((u) => (
@@ -167,6 +169,10 @@ export function AddVehicleScreen({ navigation }: Props) {
     </View>
   );
 
+  // ── Add Vehicle form layout ──────────────────────────────────────────
+  // ScrollView fills the screen. paddingTop accounts for safe area + extra 60px offset.
+  // paddingHorizontal 16px = screen margin. gap 12px between form fields.
+  // paddingBottom 32px = breathing room at bottom.
   return (
     <ScrollView
       className="flex-1 bg-[#0C111F]"
@@ -177,8 +183,10 @@ export function AddVehicleScreen({ navigation }: Props) {
         gap: 12,
       }}
     >
-      <ScreenTitleBlock title="Add Vehicle" subtitle="Create your first vehicle to continue." />
+      <ScreenTitleBlock title="Add Vehicle" subtitle="Let's add your vehicle to start tracking maintenance." />
 
+      {/* Vehicle photo upload area: h-44 (176px) tall.
+          Empty state: dashed border placeholder. Filled state: image with card border. */}
       <View className="gap-2">
         <Text className="text-sm text-[#A3ACBF]">Vehicle Photo</Text>
         {form.imageUri ? (
@@ -231,13 +239,14 @@ export function AddVehicleScreen({ navigation }: Props) {
 
       <LabeledTextInput
         label={`Current Odometer (${form.unit})`}
-        placeholder="120,000"
+        placeholder="0"
         keyboardType="number-pad"
         value={odometerDisplay}
         onChangeText={handleOdometerChange}
         rightElement={unitToggle}
       />
 
+      {/* Form error text: warning amber #FFB020, 14px */}
       {error ? <Text className="text-sm text-[#FFB020]">{error}</Text> : null}
 
       <PrimaryButton className="mt-2" disabled={submitting} onPress={handleSubmit} label={submitting ? 'Adding...' : 'Add'} />

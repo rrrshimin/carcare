@@ -7,6 +7,10 @@ type OutlineButtonProps = {
   textClassName?: string;
 };
 
+// ── Outline / secondary button ───────────────────────────────────────
+// Reused on: VehicleHeroCard (Share), ShareLinkScreen (Copy/Share/Stop Sharing).
+// Height: min-h-11 (44px). Fill: card dark #141A2B. Border: #1F2740.
+// Text: link blue #367DFF. Override textClassName/className for color variants (e.g. warning).
 export function OutlineButton({ label, onPress, className, textClassName }: OutlineButtonProps) {
   return (
     <Pressable

@@ -14,6 +14,10 @@ type DateInputFieldProps = {
   error?: string | null;
 };
 
+// ── Date picker input ────────────────────────────────────────────────
+// Used on Add Log screen. Shows a pressable field that opens platform date picker.
+// Field styling matches LabeledTextInput for visual consistency.
+// Error state: border turns red-500. iOS gets spinner + Done button; Android auto-dismisses.
 export function DateInputField({
   label,
   value,
@@ -35,6 +39,8 @@ export function DateInputField({
   return (
     <View className="gap-2">
       <Text className="text-sm text-[#A3ACBF]">{label}</Text>
+      {/* Pressable field: same sizing as LabeledTextInput (min-h-11, rounded-xl, card fill).
+          Error state swaps border to red-500. */}
       <Pressable
         className={`min-h-11 justify-center rounded-xl border px-4 py-3 ${
           error ? 'border-red-500' : 'border-[#1F2740]'
@@ -46,12 +52,14 @@ export function DateInputField({
         </Text>
       </Pressable>
 
+      {/* Validation error text: 12px red */}
       {error ? (
         <Text className="text-xs text-red-400">{error}</Text>
       ) : null}
 
       {showPicker && (
         <>
+          {/* themeVariant="dark" matches the app's dark UI */}
           <DateTimePicker
             value={value ?? new Date()}
             mode="date"
@@ -60,6 +68,7 @@ export function DateInputField({
             onChange={handleChange}
             themeVariant="dark"
           />
+          {/* iOS-only "Done" dismiss button styled as brand-blue bar */}
           {Platform.OS === 'ios' && (
             <Pressable
               className="items-center rounded-xl bg-[#0051E8] py-2"

@@ -23,8 +23,14 @@ export function MaintenanceHistoryScreen({ route }: Props) {
 
   const displayName = data.logTypeName !== 'Unknown' ? data.logTypeName : logTypeName;
 
+  // ── Maintenance history layout ───────────────────────────────────────
+  // ScrollView: 16px padding, 12px gap between cards.
+  // Top card: item name (16px SemiBold) + StatusBadge showing due state.
+  // History entries: list of HistoryLogRow cards (newest first).
+  // Empty state: centered gray text inside a ContentCard.
   return (
     <ScrollView className="flex-1 bg-[#0C111F]" contentContainerStyle={{ padding: 16, gap: 12 }}>
+      {/* Status header card */}
       <ContentCard>
         <Text className="text-base font-semibold text-white">{displayName}</Text>
         <View className="mt-2">

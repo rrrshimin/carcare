@@ -40,6 +40,9 @@ export function SplashScreen({ navigation }: Props) {
     hasNavigated.current = true;
   }, [isReady, onboardingCompleted, vehicleExists, error, navigation]);
 
+  // ── Splash visual ────────────────────────────────────────────────────
+  // Full-screen dark background with centered logo. Logo asset: assets/splash-icon.png.
+  // Logo size: h-24 (96px) × w-48 (192px). Change these to resize the splash logo.
   return (
     <View className="flex-1 items-center justify-center bg-[#0C111F]">
       <Image

@@ -12,6 +12,10 @@ import { AppStackParamList } from '@/types/navigation';
 
 const Stack = createNativeStackNavigator<AppStackParamList>();
 
+// ── Main app stack (post-setup) ──────────────────────────────────────
+// Default header: dark background from theme, white tint, no shadow, no back title.
+// Home hides its header (full-bleed hero image). All other screens show the default header.
+// Change headerStyle.backgroundColor here to affect all inner screen headers at once.
 export function AppNavigator() {
   return (
     <Stack.Navigator

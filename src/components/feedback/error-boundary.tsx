@@ -6,6 +6,9 @@ import { PrimaryButton } from '@/components/buttons/primary-button';
 type Props = { children: ReactNode };
 type State = { hasError: boolean };
 
+// ── Global error boundary (wraps entire app in App.tsx) ──────────────
+// Fallback UI: centered error message + Restart button on dark background.
+// Same visual layout as EmptyState/ErrorState for consistency.
 export class ErrorBoundary extends Component<Props, State> {
   state: State = { hasError: false };
 

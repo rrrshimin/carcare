@@ -61,11 +61,15 @@ export function OnboardingScreen({ navigation }: Props) {
     }
   }
 
+  // ── Onboarding layout ────────────────────────────────────────────────
+  // Full-screen dark, safe-area padded. Horizontal paged FlatList for slide content.
+  // Bottom area: PaginationDots + PrimaryButton pinned to bottom with px-6 pb-6 padding.
   return (
     <View
       className="flex-1 bg-[#0C111F]"
       style={{ paddingTop: insets.top, paddingBottom: insets.bottom }}
     >
+      {/* Horizontal paged slide list. Each slide width = SCREEN_WIDTH for snap. */}
       <FlatList
         ref={flatListRef}
         data={slides}
@@ -85,6 +89,7 @@ export function OnboardingScreen({ navigation }: Props) {
         style={{ flex: 1 }}
       />
 
+      {/* Bottom controls: dots + button. px-6 (24px) side padding, pb-6 (24px) bottom padding. */}
       <View className="px-6 pb-6">
         <PaginationDots count={slides.length} activeIndex={index} />
         <PrimaryButton

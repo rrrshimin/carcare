@@ -6,6 +6,10 @@ type ActionChipButtonProps = {
   className?: string;
 };
 
+// ── Small chip button ────────────────────────────────────────────────
+// Used as the "New Log" chip inside MaintenanceCategoryCard.
+// Height: min-h-9 (36px). Fill: background dark #0C111F. Border: #1F2740.
+// Text: link blue #367DFF, 12px. self-start keeps it compact (no stretch).
 export function ActionChipButton({ label, onPress, className }: ActionChipButtonProps) {
   return (
     <Pressable
