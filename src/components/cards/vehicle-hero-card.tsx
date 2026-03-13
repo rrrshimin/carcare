@@ -12,40 +12,43 @@ type VehicleHeroCardProps = {
 };
 
 const IMAGE_HEIGHT = Math.round(Dimensions.get('window').height * 0.3);
+const IMAGE_OVERLAP = Math.round(IMAGE_HEIGHT * 0.1);
 
 export function VehicleHeroCard({ vehicle, onPressShare, onPressUpdateMileage }: VehicleHeroCardProps) {
   return (
-    <ContentCard>
+    <View>
       {vehicle.imageUri ? (
         <Image
           source={{ uri: vehicle.imageUri }}
-          style={{ height: IMAGE_HEIGHT }}
-          className="w-full rounded-xl border border-[#1F2740] bg-[#0C111F]"
+          style={{ height: IMAGE_HEIGHT, width: Dimensions.get('window').width }}
+          className="bg-[#141A2B]"
           resizeMode="cover"
         />
       ) : (
-        <Image
-          source={require('../../../assets/vehicle-placeholder.png')}
-          style={{ height: IMAGE_HEIGHT }}
-          className="w-full rounded-xl border border-[#1F2740] bg-[#0C111F]"
-          resizeMode="cover"
-        />
+        <View
+          style={{ height: IMAGE_HEIGHT, width: Dimensions.get('window').width }}
+          className="items-center justify-center bg-[#141A2B]"
+        >
+          <Text className="text-4xl">🚗</Text>
+        </View>
       )}
 
-      <Text className="mt-4 text-[28px] font-extrabold leading-tight text-white">{vehicle.name}</Text>
-      <Text className="mt-1 text-sm text-[#A3ACBF]">
-        {vehicle.year} · {vehicle.fuelType} · {vehicle.transmission}
-      </Text>
+      <ContentCard className="mx-4" style={{ marginTop: -IMAGE_OVERLAP }}>
+        <Text className="text-[28px] font-extrabold leading-tight text-white">{vehicle.name}</Text>
+        <Text className="mt-1 text-sm text-[#A3ACBF]">
+          {vehicle.year} · {vehicle.fuelType} · {vehicle.transmission}
+        </Text>
 
-      <View className="mt-4 flex-row gap-3">
-        <OutlineButton
-          className="flex-1 items-center bg-[#0C111F]"
-          textClassName="text-center text-white"
-          label="Share"
-          onPress={onPressShare}
-        />
-        <PrimaryButton className="flex-1" label="Update Mileage" onPress={onPressUpdateMileage} />
-      </View>
-    </ContentCard>
+        <View className="mt-4 flex-row gap-3">
+          <OutlineButton
+            className="flex-1 items-center bg-[#0C111F]"
+            textClassName="text-center text-white"
+            label="Share"
+            onPress={onPressShare}
+          />
+          <PrimaryButton className="flex-1" label="Update Mileage" onPress={onPressUpdateMileage} />
+        </View>
+      </ContentCard>
+    </View>
   );
 }

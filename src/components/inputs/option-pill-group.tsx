@@ -1,11 +1,15 @@
 import { Pressable, Text, View } from 'react-native';
 
 type OptionPillGroupProps<T extends string> = {
-  label: string;
+  label?: string;
   options: T[];
   selected: T;
   onSelect: (value: T) => void;
 };
+
+function capitalize(str: string): string {
+  return str.charAt(0).toUpperCase() + str.slice(1);
+}
 
 export function OptionPillGroup<T extends string>({
   label,
@@ -15,7 +19,7 @@ export function OptionPillGroup<T extends string>({
 }: OptionPillGroupProps<T>) {
   return (
     <View className="gap-2">
-      <Text className="text-sm text-[#A3ACBF]">{label}</Text>
+      {label ? <Text className="text-sm text-[#A3ACBF]">{label}</Text> : null}
       <View className="flex-row flex-wrap gap-2">
         {options.map((option) => {
           const isSelected = selected === option;
@@ -31,7 +35,7 @@ export function OptionPillGroup<T extends string>({
               style={({ pressed }) => ({ opacity: pressed ? 0.85 : undefined })}
             >
               <Text className={isSelected ? 'text-sm font-semibold text-white' : 'text-sm font-semibold text-[#A3ACBF]'}>
-                {option}
+                {capitalize(option)}
               </Text>
             </Pressable>
           );

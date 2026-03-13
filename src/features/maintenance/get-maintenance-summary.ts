@@ -16,7 +16,7 @@ export type MaintenanceSummaryItem = {
 export type MaintenanceSummaryCategory = {
   id: number;
   name: string;
-  icon: string;
+  iconUrl: string | null;
   items: MaintenanceSummaryItem[];
 };
 
@@ -57,15 +57,9 @@ export function getMaintenanceSummary(data: HomeData): MaintenanceSummary {
       return {
         id: category.id,
         name: category.category_name ?? 'Unknown',
-        icon: deriveIcon(category.category_name),
+        iconUrl: category.image_url ?? null,
         items: sortedItems,
       };
     })
     .filter((group) => group.items.length > 0);
-}
-
-/** Derives a short two-character icon label from the category name. */
-function deriveIcon(categoryName: string | null): string {
-  if (!categoryName) return '??';
-  return categoryName.substring(0, 2).toUpperCase();
 }

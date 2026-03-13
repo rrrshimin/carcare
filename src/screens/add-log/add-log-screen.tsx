@@ -7,7 +7,6 @@ import { PrimaryButton } from '@/components/buttons/primary-button';
 import { DateInputField } from '@/components/inputs/date-input-field';
 import { LabeledMultilineInput } from '@/components/inputs/labeled-multiline-input';
 import { LabeledTextInput } from '@/components/inputs/labeled-text-input';
-import { ScreenTitleBlock } from '@/components/layout/screen-title-block';
 import { routes } from '@/navigation/routes';
 import { getLogTypeById, type LogTypeRow } from '@/services/api/log-type-api';
 import { getCurrentVehicle } from '@/services/vehicle-service';
@@ -161,7 +160,7 @@ export function AddLogScreen({ navigation, route }: Props) {
       contentContainerStyle={{ padding: 16, gap: 12 }}
       keyboardShouldPersistTaps="handled"
     >
-      <ScreenTitleBlock title="Add Log" subtitle={logTypeName} />
+      <Text className="text-sm text-[#A3ACBF]">{logTypeName}</Text>
 
       <LabeledTextInput
         label={`Changed At (${isMileageBased ? 'km/mi' : 'odometer'})`}

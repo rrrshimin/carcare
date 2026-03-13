@@ -41,7 +41,7 @@ export type MaintenanceItemStatus = {
 export type CategoryDisplay = {
   id: number;
   name: string;
-  icon: string;
+  iconUrl: string | null;
 };
 
 export type ItemDisplay = {

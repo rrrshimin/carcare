@@ -1,4 +1,4 @@
-import { Text, View } from 'react-native';
+import { Image, Text, View } from 'react-native';
 
 import { ActionChipButton } from '@/components/buttons/action-chip-button';
 import { ContentCard } from '@/components/cards/content-card';
@@ -25,7 +25,17 @@ export function MaintenanceCategoryCard({
       <View className="flex-row items-center justify-between">
         <View className="flex-row items-center gap-3">
           <View className="h-10 w-10 items-center justify-center rounded-full bg-[#0C111F]">
-            <Text className="text-[10px] font-bold text-[#A3ACBF]">{category.icon}</Text>
+            {category.iconUrl ? (
+              <Image
+                source={{ uri: category.iconUrl }}
+                className="h-5 w-5"
+                resizeMode="contain"
+              />
+            ) : (
+              <Text className="text-[10px] font-bold text-[#A3ACBF]">
+                {category.name.substring(0, 2).toUpperCase()}
+              </Text>
+            )}
           </View>
           <Text className="text-lg font-extrabold text-white">{category.name}</Text>
         </View>

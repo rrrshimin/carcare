@@ -1,10 +1,10 @@
 import { useMemo, useState } from 'react';
-import { Image, ScrollView, Text, View } from 'react-native';
+import { Image, Pressable, ScrollView, Text, View } from 'react-native';
 import { CommonActions } from '@react-navigation/native';
 import { NativeStackScreenProps } from '@react-navigation/native-stack';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import * as ImagePicker from 'expo-image-picker';
 
-import { OutlineButton } from '@/components/buttons/outline-button';
 import { PrimaryButton } from '@/components/buttons/primary-button';
 import { LabeledTextInput } from '@/components/inputs/labeled-text-input';
 import { OptionPillGroup } from '@/components/inputs/option-pill-group';
@@ -30,7 +30,12 @@ const fuelTypeOptions: FuelType[] = ['petrol', 'diesel', 'hybrid', 'electric'];
 const transmissionOptions: Transmission[] = ['automatic', 'manual'];
 const unitOptions: DistanceUnit[] = ['km', 'mi'];
 
+function formatWithCommas(digits: string): string {
+  return digits.replace(/\B(?=(\d{3})+(?!\d))/g, ',');
+}
+
 export function AddVehicleScreen({ navigation }: Props) {
+  const insets = useSafeAreaInsets();
   const [form, setForm] = useState<FormState>({
     imageUri: '',
     name: '',
@@ -44,9 +49,20 @@ export function AddVehicleScreen({ navigation }: Props) {
   const [submitting, setSubmitting] = useState(false);
 
   const currentYear = useMemo(() => new Date().getFullYear(), []);
+  const odometerDisplay = form.odometer ? formatWithCommas(form.odometer) : '';
 
   function updateForm<K extends keyof FormState>(key: K, value: FormState[K]) {
     setForm((prev) => ({ ...prev, [key]: value }));
+  }
+
+  function handleYearChange(text: string) {
+    const digits = text.replace(/\D/g, '').slice(0, 4);
+    updateForm('year', digits);
+  }
+
+  function handleOdometerChange(text: string) {
+    const digits = text.replace(/\D/g, '');
+    updateForm('odometer', digits);
   }
 
   function validate(): string | null {
@@ -125,32 +141,66 @@ export function AddVehicleScreen({ navigation }: Props) {
     }
   }
 
+  const unitToggle = (
+    <View className="mr-2 flex-row items-center gap-1">
+      {unitOptions.map((u) => (
+        <Pressable
+          key={u}
+          className={
+            form.unit === u
+              ? 'rounded-lg bg-[#0051E8] px-3 py-1.5'
+              : 'rounded-lg bg-[#0C111F] px-3 py-1.5'
+          }
+          onPress={() => updateForm('unit', u)}
+        >
+          <Text
+            className={
+              form.unit === u
+                ? 'text-xs font-semibold text-white'
+                : 'text-xs font-semibold text-[#A3ACBF]'
+            }
+          >
+            {u}
+          </Text>
+        </Pressable>
+      ))}
+    </View>
+  );
+
   return (
-    <ScrollView className="flex-1 bg-[#0C111F]" contentContainerStyle={{ padding: 16, gap: 12 }}>
+    <ScrollView
+      className="flex-1 bg-[#0C111F]"
+      contentContainerStyle={{
+        paddingTop: insets.top + 60,
+        paddingHorizontal: 16,
+        paddingBottom: 32,
+        gap: 12,
+      }}
+    >
       <ScreenTitleBlock title="Add Vehicle" subtitle="Create your first vehicle to continue." />
 
       <View className="gap-2">
         <Text className="text-sm text-[#A3ACBF]">Vehicle Photo</Text>
-        <OutlineButton
-          className="items-center"
-          textClassName="text-[#A3ACBF]"
-          label={form.imageUri ? 'Change Photo' : 'Upload Photo'}
-          onPress={handlePickImage}
-        />
         {form.imageUri ? (
-          <Image
-            source={{ uri: form.imageUri }}
-            className="h-44 w-full rounded-xl border border-[#1F2740] bg-[#141A2B]"
-            resizeMode="cover"
-          />
+          <Pressable onPress={handlePickImage}>
+            <Image
+              source={{ uri: form.imageUri }}
+              className="h-44 w-full rounded-xl border border-[#1F2740] bg-[#141A2B]"
+              resizeMode="cover"
+            />
+          </Pressable>
         ) : (
-          <Image
-            source={require('../../../assets/vehicle-placeholder.png')}
-            className="h-44 w-full rounded-xl border border-[#1F2740] bg-[#141A2B]"
-            resizeMode="cover"
-          />
+          <Pressable
+            className="h-44 w-full items-center justify-center rounded-xl"
+            style={{ borderWidth: 1.5, borderStyle: 'dashed', borderColor: 'rgba(255,255,255,0.1)' }}
+            onPress={handlePickImage}
+          >
+            <Text className="text-2xl text-[#A3ACBF]">+</Text>
+            <Text className="mt-1 text-sm text-[#A3ACBF]">Upload Photo</Text>
+          </Pressable>
         )}
       </View>
+
       <LabeledTextInput
         label="Vehicle Name"
         placeholder="Toyota Supra"
@@ -161,8 +211,9 @@ export function AddVehicleScreen({ navigation }: Props) {
         label="Year"
         placeholder="2020"
         keyboardType="number-pad"
+        maxLength={4}
         value={form.year}
-        onChangeText={(value) => updateForm('year', value)}
+        onChangeText={handleYearChange}
       />
 
       <OptionPillGroup<FuelType>
@@ -179,18 +230,12 @@ export function AddVehicleScreen({ navigation }: Props) {
       />
 
       <LabeledTextInput
-        label="Current Odometer"
-        placeholder="120000"
+        label={`Current Odometer (${form.unit})`}
+        placeholder="120,000"
         keyboardType="number-pad"
-        value={form.odometer}
-        onChangeText={(value) => updateForm('odometer', value)}
-      />
-
-      <OptionPillGroup<DistanceUnit>
-        label="Unit"
-        options={unitOptions}
-        selected={form.unit}
-        onSelect={(value) => updateForm('unit', value)}
+        value={odometerDisplay}
+        onChangeText={handleOdometerChange}
+        rightElement={unitToggle}
       />
 
       {error ? <Text className="text-sm text-[#FFB020]">{error}</Text> : null}

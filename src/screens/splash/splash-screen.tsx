@@ -1,9 +1,8 @@
 import { useEffect, useRef } from 'react';
-import { ActivityIndicator, Image, Text, View } from 'react-native';
+import { Image, View } from 'react-native';
 import { CommonActions } from '@react-navigation/native';
 import { NativeStackScreenProps } from '@react-navigation/native-stack';
 
-import { theme } from '@/constants/theme';
 import { useAppBootstrap } from '@/hooks/use-app-bootstrap';
 import { routes } from '@/navigation/routes';
 import { resolveLaunchRoute } from '@/services/launch-routing-service';
@@ -42,19 +41,11 @@ export function SplashScreen({ navigation }: Props) {
   }, [isReady, onboardingCompleted, vehicleExists, error, navigation]);
 
   return (
-    <View className="flex-1 items-center justify-center bg-[#0C111F] px-6">
+    <View className="flex-1 items-center justify-center bg-[#0C111F]">
       <Image
         source={require('../../../assets/splash-icon.png')}
         resizeMode="contain"
         className="h-24 w-48"
-      />
-      <Text className="mt-6 text-3xl font-extrabold text-white">CarCare Diary</Text>
-      <Text className="mt-2 text-sm text-[#A3ACBF]">
-        {error ? 'Something went wrong. Restarting...' : 'Preparing your garage...'}
-      </Text>
-      <ActivityIndicator
-        color={theme.colors.primary}
-        style={{ marginTop: theme.spacing.lg }}
       />
     </View>
   );

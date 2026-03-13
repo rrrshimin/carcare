@@ -4,7 +4,6 @@ import QRCode from 'react-native-qrcode-svg';
 import { OutlineButton } from '@/components/buttons/outline-button';
 import { PrimaryButton } from '@/components/buttons/primary-button';
 import { ContentCard } from '@/components/cards/content-card';
-import { ScreenTitleBlock } from '@/components/layout/screen-title-block';
 import { useShareLink } from '@/hooks/use-share-link';
 
 export function ShareLinkScreen() {
@@ -34,14 +33,11 @@ export function ShareLinkScreen() {
 
   return (
     <ScrollView className="flex-1 bg-[#0C111F]" contentContainerStyle={{ padding: 16, gap: 16 }}>
-      <ScreenTitleBlock
-        title="Share Link"
-        subtitle={
-          isSharing
-            ? 'Anyone with this link can view your vehicle maintenance history.'
-            : 'Create a public link so others can see your maintenance history.'
-        }
-      />
+      <Text className="text-sm leading-5 text-[#A3ACBF]">
+        {isSharing
+          ? 'Anyone with this link can view your vehicle maintenance history.'
+          : 'Create a public link so others can see your maintenance history.'}
+      </Text>
 
       {/* Error banner */}
       {error ? (

@@ -1,6 +1,7 @@
-import { useMemo, useState } from 'react';
-import { Alert, Text, View } from 'react-native';
+import { useRef, useState } from 'react';
+import { Alert, Dimensions, FlatList, View } from 'react-native';
 import { NativeStackScreenProps } from '@react-navigation/native-stack';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { PrimaryButton } from '@/components/buttons/primary-button';
 import { OnboardingSlideCard } from '@/components/cards/onboarding-slide-card';
@@ -10,6 +11,8 @@ import { setOnboardingCompleted } from '@/services/storage-service';
 import { SetupFlowStackParamList } from '@/types/navigation';
 
 type Props = NativeStackScreenProps<SetupFlowStackParamList, typeof routes.onboarding>;
+
+const SCREEN_WIDTH = Dimensions.get('window').width;
 
 const slides = [
   {
@@ -30,14 +33,17 @@ const slides = [
 ] as const;
 
 export function OnboardingScreen({ navigation }: Props) {
+  const insets = useSafeAreaInsets();
   const [index, setIndex] = useState(0);
   const [saving, setSaving] = useState(false);
-  const currentSlide = useMemo(() => slides[index], [index]);
+  const flatListRef = useRef<FlatList>(null);
   const isLastSlide = index === slides.length - 1;
 
   async function handlePrimaryAction() {
     if (!isLastSlide) {
-      setIndex((prev) => prev + 1);
+      const nextIndex = index + 1;
+      flatListRef.current?.scrollToIndex({ index: nextIndex, animated: true });
+      setIndex(nextIndex);
       return;
     }
 
@@ -56,30 +62,38 @@ export function OnboardingScreen({ navigation }: Props) {
   }
 
   return (
-    <View className="flex-1 bg-[#0C111F] px-6 py-8">
-      <View className="mb-4">
-        <Text className="text-center text-xl font-extrabold text-white">CarCare Diary</Text>
-        <Text className="mt-1 text-center text-sm text-white">Welcome to your maintenance companion</Text>
-      </View>
-
-      <OnboardingSlideCard
-        title={currentSlide.title}
-        description={currentSlide.description}
-        imageSource={currentSlide.image}
-        index={index}
-        total={slides.length}
+    <View
+      className="flex-1 bg-[#0C111F]"
+      style={{ paddingTop: insets.top, paddingBottom: insets.bottom }}
+    >
+      <FlatList
+        ref={flatListRef}
+        data={slides}
+        horizontal
+        pagingEnabled
+        scrollEnabled={false}
+        showsHorizontalScrollIndicator={false}
+        keyExtractor={(_, i) => String(i)}
+        getItemLayout={(_, i) => ({ length: SCREEN_WIDTH, offset: SCREEN_WIDTH * i, index: i })}
+        renderItem={({ item }) => (
+          <OnboardingSlideCard
+            title={item.title}
+            description={item.description}
+            imageSource={item.image}
+          />
+        )}
+        style={{ flex: 1 }}
       />
 
-      <View className="mt-6">
+      <View className="px-6 pb-6">
         <PaginationDots count={slides.length} activeIndex={index} />
+        <PrimaryButton
+          className="mt-6"
+          disabled={saving}
+          onPress={handlePrimaryAction}
+          label={isLastSlide ? (saving ? 'Saving...' : 'Get Started') : 'Continue'}
+        />
       </View>
-
-      <PrimaryButton
-        className="mt-6"
-        disabled={saving}
-        onPress={handlePrimaryAction}
-        label={isLastSlide ? (saving ? 'Saving...' : 'Get Started') : 'Continue'}
-      />
     </View>
   );
 }

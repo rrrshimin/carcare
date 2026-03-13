@@ -53,6 +53,13 @@ export function HomeScreen({ navigation }: Props) {
     return getMaintenanceSummary(data);
   }, [data]);
 
+  const filteredSummary = useMemo(() => {
+    return summary.map((group) => ({
+      ...group,
+      items: group.items.filter((item) => item.status.variant !== 'neutral'),
+    }));
+  }, [summary]);
+
   // ── Navigation handlers ─────────────────────────────────────────
 
   function handlePressNewLog(category: CategoryDisplay) {
@@ -107,7 +114,7 @@ export function HomeScreen({ navigation }: Props) {
   return (
     <ScrollView
       className="flex-1 bg-[#0C111F]"
-      contentContainerStyle={{ paddingHorizontal: 16, paddingBottom: 32, gap: 16 }}
+      contentContainerStyle={{ paddingBottom: 32 }}
     >
       <VehicleHeroCard
         vehicle={vehicle}
@@ -115,22 +122,24 @@ export function HomeScreen({ navigation }: Props) {
         onPressUpdateMileage={() => navigation.navigate(routes.updateMileage)}
       />
 
-      <MileageCard
-        currentOdometer={vehicle.currentOdometer}
-        unit={vehicle.unit}
-        onPressUpdate={() => navigation.navigate(routes.updateMileage)}
-      />
-
-      {summary.map((group) => (
-        <MaintenanceCategoryCard
-          key={group.id}
-          category={group}
-          items={group.items}
-          onPressNewLog={handlePressNewLog}
-          onPressItem={handlePressItem}
-          onPressAddLog={handlePressAddLog}
+      <View style={{ paddingHorizontal: 16, gap: 16, marginTop: 16 }}>
+        <MileageCard
+          currentOdometer={vehicle.currentOdometer}
+          unit={vehicle.unit}
+          onPressUpdate={() => navigation.navigate(routes.updateMileage)}
         />
-      ))}
+
+        {filteredSummary.map((group) => (
+          <MaintenanceCategoryCard
+            key={group.id}
+            category={group}
+            items={group.items}
+            onPressNewLog={handlePressNewLog}
+            onPressItem={handlePressItem}
+            onPressAddLog={handlePressAddLog}
+          />
+        ))}
+      </View>
     </ScrollView>
   );
 }

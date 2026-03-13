@@ -41,7 +41,7 @@ const normalStatus: MaintenanceItemStatus = { variant: 'normal', label: 'Change 
 const warningStatus: MaintenanceItemStatus = { variant: 'warning', label: 'Change in 800 km' };
 const overdueStatus: MaintenanceItemStatus = { variant: 'overdue', label: 'Overdue by 300 km' };
 
-const demoCategory: CategoryDisplay = { id: 1, name: 'Engine', icon: 'EN' };
+const demoCategory: CategoryDisplay = { id: 1, name: 'Engine', iconUrl: null };
 
 const demoItems: ItemDisplay[] = [
   { id: 1, name: 'Engine Oil', status: neutralStatus },
@@ -115,8 +115,7 @@ export function UIPlaygroundScreen() {
       <OnboardingSlideCard
         title="Service Made Simple"
         description="Track essentials for your vehicle without clutter."
-        index={1}
-        total={3}
+        imageSource={require('../../../assets/onboarding-1.png')}
       />
 
       <VehicleHeroCard

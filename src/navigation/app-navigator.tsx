@@ -17,7 +17,7 @@ export function AppNavigator() {
     <Stack.Navigator
       initialRouteName={routes.home}
       screenOptions={{
-        headerStyle: { backgroundColor: theme.colors.card },
+        headerStyle: { backgroundColor: theme.colors.background },
         headerTintColor: theme.colors.textPrimary,
         headerShadowVisible: false,
         headerBackTitleVisible: false,

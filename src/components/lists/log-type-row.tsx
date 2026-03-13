@@ -9,7 +9,7 @@ type LogTypeRowProps = {
 export function LogTypeRow({ title, subtitle, onPress }: LogTypeRowProps) {
   return (
     <Pressable
-      className="rounded-xl border border-[#1F2740] bg-[#141A2B] p-4"
+      className="rounded-xl bg-[#141A2B] p-4"
       onPress={onPress}
       style={({ pressed }) => ({ opacity: pressed ? 0.9 : undefined })}
     >

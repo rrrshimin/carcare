@@ -6,7 +6,6 @@ import { EmptyState } from '@/components/feedback/empty-state';
 import { ErrorState } from '@/components/feedback/error-state';
 import { LoadingState } from '@/components/feedback/loading-state';
 import { StatusBadge } from '@/components/feedback/status-badge';
-import { ScreenTitleBlock } from '@/components/layout/screen-title-block';
 import { HistoryLogRow } from '@/components/lists/history-log-row';
 import { useMaintenanceHistory } from '@/hooks/use-maintenance-history';
 import { routes } from '@/navigation/routes';
@@ -26,8 +25,6 @@ export function MaintenanceHistoryScreen({ route }: Props) {
 
   return (
     <ScrollView className="flex-1 bg-[#0C111F]" contentContainerStyle={{ padding: 16, gap: 12 }}>
-      <ScreenTitleBlock title="Maintenance History" />
-
       <ContentCard>
         <Text className="text-base font-semibold text-white">{displayName}</Text>
         <View className="mt-2">

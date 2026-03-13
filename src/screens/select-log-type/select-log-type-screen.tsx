@@ -5,7 +5,6 @@ import { NativeStackScreenProps } from '@react-navigation/native-stack';
 
 import { ContentCard } from '@/components/cards/content-card';
 import { LogTypeRow } from '@/components/lists/log-type-row';
-import { ScreenTitleBlock } from '@/components/layout/screen-title-block';
 import { routes } from '@/navigation/routes';
 import {
   getLogTypesByCategoryId,
@@ -67,7 +66,7 @@ export function SelectLogTypeScreen({ navigation, route }: Props) {
 
   return (
     <ScrollView className="flex-1 bg-[#0C111F]" contentContainerStyle={{ padding: 16, gap: 12 }}>
-      <ScreenTitleBlock title="Select Log Type" subtitle={categoryName} />
+      <Text className="text-sm text-[#A3ACBF]">{categoryName}</Text>
 
       {logTypes.map((lt) => (
         <LogTypeRow

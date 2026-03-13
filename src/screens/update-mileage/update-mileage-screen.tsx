@@ -5,7 +5,6 @@ import { NativeStackScreenProps } from '@react-navigation/native-stack';
 
 import { PrimaryButton } from '@/components/buttons/primary-button';
 import { LabeledTextInput } from '@/components/inputs/labeled-text-input';
-import { ScreenTitleBlock } from '@/components/layout/screen-title-block';
 import { routes } from '@/navigation/routes';
 import {
   getCurrentVehicle,
@@ -114,8 +113,6 @@ export function UpdateMileageScreen({ navigation }: Props) {
       contentContainerStyle={{ padding: 16, gap: 16 }}
       keyboardShouldPersistTaps="handled"
     >
-      <ScreenTitleBlock title="Update Mileage" />
-
       <View className="rounded-xl border border-[#1F2740] bg-[#141A2B] px-4 py-3">
         <Text className="text-sm text-[#A3ACBF]">Current odometer</Text>
         <Text className="mt-1 text-lg font-semibold text-white">
