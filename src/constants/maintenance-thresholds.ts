@@ -1,4 +1,4 @@
-/** Show warning when remaining distance is at or below this value */
+/** Show warning when remaining distance is at or below this value (canonical km). */
 export const WARNING_DISTANCE = 1000;
 
 /** Show warning when remaining days is at or below this value */

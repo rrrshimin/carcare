@@ -19,6 +19,7 @@ export type MaintenanceHistoryViewModel = {
   specLabel: string;
   dueStatus: MaintenanceItemStatus;
   unit: string;
+  categoryIconUrl: string | null;
   entries: HistoryLogEntry[];
 };
 
@@ -31,6 +32,7 @@ export function getMaintenanceHistory(
   currentOdometer: number,
   fuelType: string | null,
   unit: string,
+  categoryIconUrl: string | null = null,
 ): MaintenanceHistoryViewModel {
   const logTypeName = logType.log_type_name ?? 'Unknown';
   const specLabel = logType.spec_name ?? 'Specification';
@@ -51,6 +53,7 @@ export function getMaintenanceHistory(
     specLabel,
     dueStatus: result?.status ?? NEUTRAL_STATUS,
     unit,
+    categoryIconUrl,
     entries,
   };
 }

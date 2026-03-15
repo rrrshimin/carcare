@@ -1,4 +1,4 @@
-import { ActivityIndicator, ScrollView, Text, View } from 'react-native';
+import { ActivityIndicator, Linking, Pressable, ScrollView, Text, View } from 'react-native';
 import QRCode from 'react-native-qrcode-svg';
 
 import { OutlineButton } from '@/components/buttons/outline-button';
@@ -62,13 +62,15 @@ export function ShareLinkScreen() {
               <QRCode value={shareUrl} size={160} backgroundColor="#FFFFFF" color="#0C111F" />
             </View>
 
-            {/* Selectable share URL: link blue, 14px */}
-            <Text
-              className="mt-4 text-center text-sm text-[#367DFF]"
-              selectable
-            >
-              {shareUrl}
-            </Text>
+            {/* Tappable share URL: opens in browser */}
+            <Pressable className="mt-4" onPress={() => Linking.openURL(shareUrl)}>
+              <Text
+                className="text-center text-sm text-[#367DFF] underline"
+                selectable
+              >
+                {shareUrl}
+              </Text>
+            </Pressable>
           </ContentCard>
 
           {/* Action buttons: Copy/Share side by side, Stop Sharing full width with amber styling */}

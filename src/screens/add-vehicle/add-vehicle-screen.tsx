@@ -177,7 +177,7 @@ export function AddVehicleScreen({ navigation }: Props) {
     <ScrollView
       className="flex-1 bg-[#0C111F]"
       contentContainerStyle={{
-        paddingTop: insets.top + 60,
+        paddingTop: insets.top + 24,
         paddingHorizontal: 16,
         paddingBottom: 32,
         gap: 12,

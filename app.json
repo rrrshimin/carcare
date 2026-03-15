@@ -9,12 +9,13 @@
     "splash": {
       "image": "./assets/splash-icon.png",
       "resizeMode": "contain",
-      "backgroundColor": "#0C111F"
+      "backgroundColor": "#0A0C14"
     },
     "ios": {
       "supportsTablet": true
     },
     "android": {
+      "package": "com.carcarediary.app",
       "adaptiveIcon": {
         "backgroundColor": "#0C111F",
         "foregroundImage": "./assets/adroid-icon-foreground.png",
@@ -37,6 +38,11 @@
           "color": "#0051E8"
         }
       ]
-    ]
+    ],
+    "extra": {
+      "eas": {
+        "projectId": "dc58c2ae-acf8-42c0-ad17-3f9fe6f08a08"
+      }
+    }
   }
 }

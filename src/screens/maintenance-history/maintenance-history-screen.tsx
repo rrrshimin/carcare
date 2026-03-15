@@ -1,7 +1,6 @@
-import { ScrollView, Text, View } from 'react-native';
+import { Image, ScrollView, Text, View } from 'react-native';
 import { NativeStackScreenProps } from '@react-navigation/native-stack';
 
-import { ContentCard } from '@/components/cards/content-card';
 import { EmptyState } from '@/components/feedback/empty-state';
 import { ErrorState } from '@/components/feedback/error-state';
 import { LoadingState } from '@/components/feedback/loading-state';
@@ -23,30 +22,40 @@ export function MaintenanceHistoryScreen({ route }: Props) {
 
   const displayName = data.logTypeName !== 'Unknown' ? data.logTypeName : logTypeName;
 
-  // ── Maintenance history layout ───────────────────────────────────────
-  // ScrollView: 16px padding, 12px gap between cards.
-  // Top card: item name (16px SemiBold) + StatusBadge showing due state.
-  // History entries: list of HistoryLogRow cards (newest first).
-  // Empty state: centered gray text inside a ContentCard.
   return (
     <ScrollView className="flex-1 bg-[#0C111F]" contentContainerStyle={{ padding: 16, gap: 12 }}>
-      {/* Status header card */}
-      <ContentCard>
-        <Text className="text-base font-semibold text-white">{displayName}</Text>
+      {/* Centered header: category icon, item name, status badge */}
+      <View className="items-center pb-2 pt-1">
+        {data.categoryIconUrl ? (
+          <Image
+            source={{ uri: data.categoryIconUrl }}
+            className="h-16 w-16"
+            resizeMode="contain"
+          />
+        ) : (
+          <View className="h-16 w-16 items-center justify-center rounded-2xl bg-[#141A2B]">
+            <Text className="text-xs font-bold text-[#A3ACBF]">
+              {displayName.substring(0, 2).toUpperCase()}
+            </Text>
+          </View>
+        )}
+
+        <Text className="mt-3 text-lg font-bold text-white">{displayName}</Text>
+
         <View className="mt-2">
           <StatusBadge label={data.dueStatus.label} variant={data.dueStatus.variant} />
         </View>
-      </ContentCard>
+      </View>
 
       {data.entries.length === 0 ? (
-        <ContentCard>
+        <View className="items-center rounded-2xl bg-[#141A2B] p-6">
           <Text className="text-center text-sm text-[#A3ACBF]">
             No logs yet for {displayName}.
           </Text>
           <Text className="mt-1 text-center text-xs text-[#A3ACBF]">
             Add your first maintenance log from the home screen.
           </Text>
-        </ContentCard>
+        </View>
       ) : (
         data.entries.map((entry) => (
           <HistoryLogRow

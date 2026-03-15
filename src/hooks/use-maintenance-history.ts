@@ -1,6 +1,7 @@
 import { useCallback, useState } from 'react';
 import { useFocusEffect } from '@react-navigation/native';
 
+import { getCategoryById } from '@/services/api/category-api';
 import { getLogTypeById, type LogTypeRow } from '@/services/api/log-type-api';
 import { getLogsByVehicleAndLogType } from '@/services/api/user-log-api';
 import { getDeviceByDeviceId, type UserDeviceRow } from '@/services/api/device-api';
@@ -55,7 +56,12 @@ export function useMaintenanceHistory(logTypeId: number): UseMaintenanceHistoryR
             return;
           }
 
-          const logs = await getLogsByVehicleAndLogType(vehicle.id, logTypeId);
+          const [logs, category] = await Promise.all([
+            getLogsByVehicleAndLogType(vehicle.id, logTypeId),
+            logType.category_link
+              ? getCategoryById(logType.category_link)
+              : Promise.resolve(null),
+          ]);
           if (cancelled) return;
 
           const viewModel = getMaintenanceHistory(
@@ -65,6 +71,7 @@ export function useMaintenanceHistory(logTypeId: number): UseMaintenanceHistoryR
             vehicle.current_odometer ?? 0,
             vehicle.fuel_type,
             device.unit ?? 'km',
+            category?.image_url ?? null,
           );
 
           setData(viewModel);
