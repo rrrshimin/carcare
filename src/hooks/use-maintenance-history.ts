@@ -5,8 +5,9 @@ import { getCategoryById } from '@/services/api/category-api';
 import { getLogTypeById, type LogTypeRow } from '@/services/api/log-type-api';
 import { getLogsByVehicleAndLogType } from '@/services/api/user-log-api';
 import { getDeviceByDeviceId, type UserDeviceRow } from '@/services/api/device-api';
-import { getVehicleByDeviceId, type VehicleRow } from '@/services/api/vehicle-api';
+import { getVehicleByDeviceId, getVehicleById, type VehicleRow } from '@/services/api/vehicle-api';
 import { getDeviceId } from '@/services/storage-service';
+import { getVehicleStore } from '@/store/vehicle-store';
 import {
   getMaintenanceHistory,
   type MaintenanceHistoryViewModel,
@@ -38,8 +39,12 @@ export function useMaintenanceHistory(logTypeId: number): UseMaintenanceHistoryR
             return;
           }
 
+          const { activeVehicleId } = getVehicleStore();
+
           const [vehicle, device, logType] = await Promise.all([
-            getVehicleByDeviceId(deviceId),
+            activeVehicleId
+              ? getVehicleById(activeVehicleId, deviceId)
+              : getVehicleByDeviceId(deviceId),
             getDeviceByDeviceId(deviceId),
             getLogTypeById(logTypeId),
           ]);
@@ -57,7 +62,7 @@ export function useMaintenanceHistory(logTypeId: number): UseMaintenanceHistoryR
           }
 
           const [logs, category] = await Promise.all([
-            getLogsByVehicleAndLogType(vehicle.id, logTypeId),
+            getLogsByVehicleAndLogType(vehicle.id, logTypeId, deviceId),
             logType.category_link
               ? getCategoryById(logType.category_link)
               : Promise.resolve(null),

@@ -2,6 +2,7 @@
   "expo": {
     "name": "CarCare Diary",
     "slug": "carcare-diary",
+    "scheme": "carcarediary",
     "version": "1.0.0",
     "orientation": "portrait",
     "icon": "./assets/icon.png",
@@ -12,7 +13,9 @@
       "backgroundColor": "#0A0C14"
     },
     "ios": {
-      "supportsTablet": true
+      "supportsTablet": true,
+      "usesAppleSignIn": true,
+      "bundleIdentifier": "com.carcarediary.app"
     },
     "android": {
       "package": "com.carcarediary.app",
@@ -30,6 +33,7 @@
     "plugins": [
       "expo-font",
       "expo-asset",
+      "expo-apple-authentication",
       "@react-native-community/datetimepicker",
       [
         "expo-notifications",
@@ -37,7 +41,14 @@
           "icon": "./assets/icon.png",
           "color": "#0051E8"
         }
-      ]
+      ],
+      [
+        "@react-native-google-signin/google-signin",
+        {
+          "iosUrlScheme": "com.googleusercontent.apps.PLACEHOLDER_IOS_CLIENT_ID"
+        }
+      ],
+      "expo-web-browser"
     ],
     "extra": {
       "eas": {

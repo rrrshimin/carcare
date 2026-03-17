@@ -148,8 +148,33 @@ export type Database = {
           },
         ]
       }
+      user_profiles: {
+        Row: {
+          auth_user_id: string
+          created_at: string
+          id: string
+          updated_at: string
+          username: string
+        }
+        Insert: {
+          auth_user_id: string
+          created_at?: string
+          id?: string
+          updated_at?: string
+          username: string
+        }
+        Update: {
+          auth_user_id?: string
+          created_at?: string
+          id?: string
+          updated_at?: string
+          username?: string
+        }
+        Relationships: []
+      }
       vehicles: {
         Row: {
+          auth_user_id: string | null
           created_at: string
           current_odometer: number | null
           fuel_type: string | null
@@ -162,6 +187,7 @@ export type Database = {
           year: number | null
         }
         Insert: {
+          auth_user_id?: string | null
           created_at?: string
           current_odometer?: number | null
           fuel_type?: string | null
@@ -174,6 +200,7 @@ export type Database = {
           year?: number | null
         }
         Update: {
+          auth_user_id?: string | null
           created_at?: string
           current_odometer?: number | null
           fuel_type?: string | null
@@ -200,7 +227,231 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
-      [_ in never]: never
+      claim_guest_vehicles: {
+        Args: { p_device_id: string }
+        Returns: undefined
+      }
+      delete_guest_log: {
+        Args: { p_device_id: string; p_log_id: number }
+        Returns: undefined
+      }
+      delete_guest_vehicle: {
+        Args: { p_device_id: string; p_vehicle_id: number }
+        Returns: undefined
+      }
+      create_device: {
+        Args: { p_device_id: string }
+        Returns: {
+          created_at: string
+          device_id: string | null
+          id: number
+          subscription_status: string
+          unit: string | null
+        }[]
+      }
+      create_guest_log: {
+        Args: {
+          p_device_id: string
+          p_car_id: number
+          p_log_type: number
+          p_odo_log?: number | null
+          p_change_date?: string | null
+          p_specs?: string | null
+          p_notes?: string | null
+        }
+        Returns: {
+          car_id: number | null
+          change_date: string | null
+          created_at: string
+          id: number
+          log_type: number | null
+          notes: string | null
+          odo_log: number | null
+          specs: string | null
+        }[]
+      }
+      create_guest_vehicle: {
+        Args: {
+          p_device_id: string
+          p_name: string
+          p_year: number
+          p_fuel_type: string
+          p_transmission: string
+          p_current_odometer: number
+          p_image_url?: string | null
+        }
+        Returns: {
+          auth_user_id: string | null
+          created_at: string
+          current_odometer: number | null
+          fuel_type: string | null
+          id: number
+          image_url: string | null
+          name: string | null
+          shared_link: string | null
+          transmission: string | null
+          user_id_link: string | null
+          year: number | null
+        }[]
+      }
+      get_device: {
+        Args: { p_device_id: string }
+        Returns: {
+          created_at: string
+          device_id: string | null
+          id: number
+          subscription_status: string
+          unit: string | null
+        }[]
+      }
+      get_guest_logs: {
+        Args: { p_device_id: string; p_vehicle_id: number }
+        Returns: {
+          car_id: number | null
+          change_date: string | null
+          created_at: string
+          id: number
+          log_type: number | null
+          notes: string | null
+          odo_log: number | null
+          specs: string | null
+        }[]
+      }
+      get_guest_logs_by_type: {
+        Args: { p_device_id: string; p_vehicle_id: number; p_log_type_id: number }
+        Returns: {
+          car_id: number | null
+          change_date: string | null
+          created_at: string
+          id: number
+          log_type: number | null
+          notes: string | null
+          odo_log: number | null
+          specs: string | null
+        }[]
+      }
+      get_guest_vehicle: {
+        Args: { p_device_id: string; p_vehicle_id: number }
+        Returns: {
+          auth_user_id: string | null
+          created_at: string
+          current_odometer: number | null
+          fuel_type: string | null
+          id: number
+          image_url: string | null
+          name: string | null
+          shared_link: string | null
+          transmission: string | null
+          user_id_link: string | null
+          year: number | null
+        }[]
+      }
+      get_guest_vehicles: {
+        Args: { p_device_id: string }
+        Returns: {
+          auth_user_id: string | null
+          created_at: string
+          current_odometer: number | null
+          fuel_type: string | null
+          id: number
+          image_url: string | null
+          name: string | null
+          shared_link: string | null
+          transmission: string | null
+          user_id_link: string | null
+          year: number | null
+        }[]
+      }
+      get_shared_vehicle: {
+        Args: { p_slug: string }
+        Returns: {
+          auth_user_id: string | null
+          created_at: string
+          current_odometer: number | null
+          fuel_type: string | null
+          id: number
+          image_url: string | null
+          name: string | null
+          shared_link: string | null
+          transmission: string | null
+          user_id_link: string | null
+          year: number | null
+        }[]
+      }
+      get_shared_vehicle_logs: {
+        Args: { p_slug: string }
+        Returns: {
+          car_id: number | null
+          change_date: string | null
+          created_at: string
+          id: number
+          log_type: number | null
+          notes: string | null
+          odo_log: number | null
+          specs: string | null
+        }[]
+      }
+      set_guest_share_link: {
+        Args: { p_device_id: string; p_vehicle_id: number; p_slug?: string | null }
+        Returns: {
+          auth_user_id: string | null
+          created_at: string
+          current_odometer: number | null
+          fuel_type: string | null
+          id: number
+          image_url: string | null
+          name: string | null
+          shared_link: string | null
+          transmission: string | null
+          user_id_link: string | null
+          year: number | null
+        }[]
+      }
+      update_guest_vehicle_profile: {
+        Args: {
+          p_device_id: string
+          p_vehicle_id: number
+          p_name?: string | null
+          p_image_url?: string | null
+        }
+        Returns: {
+          auth_user_id: string | null
+          created_at: string
+          current_odometer: number | null
+          fuel_type: string | null
+          id: number
+          image_url: string | null
+          name: string | null
+          shared_link: string | null
+          transmission: string | null
+          user_id_link: string | null
+          year: number | null
+        }[]
+      }
+      update_device_subscription: {
+        Args: { p_device_id: string; p_status: string }
+        Returns: undefined
+      }
+      update_device_unit: {
+        Args: { p_device_id: string; p_unit: string }
+        Returns: undefined
+      }
+      update_guest_vehicle_odometer: {
+        Args: { p_device_id: string; p_vehicle_id: number; p_odometer: number }
+        Returns: {
+          auth_user_id: string | null
+          created_at: string
+          current_odometer: number | null
+          fuel_type: string | null
+          id: number
+          image_url: string | null
+          name: string | null
+          shared_link: string | null
+          transmission: string | null
+          user_id_link: string | null
+          year: number | null
+        }[]
+      }
     }
     Enums: {
       [_ in never]: never

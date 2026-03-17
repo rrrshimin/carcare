@@ -17,3 +17,9 @@ export const SUPABASE_URL: string = url;
 export const SUPABASE_ANON_KEY: string = key;
 
 export const SHARE_BASE_URL = 'https://carcarediary.com';
+
+export const GOOGLE_WEB_CLIENT_ID: string =
+  process.env.EXPO_PUBLIC_GOOGLE_WEB_CLIENT_ID ?? '';
+
+export const GOOGLE_IOS_CLIENT_ID: string =
+  process.env.EXPO_PUBLIC_GOOGLE_IOS_CLIENT_ID ?? '';

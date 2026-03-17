@@ -15,6 +15,7 @@ export type HistoryLogEntry = {
 };
 
 export type MaintenanceHistoryViewModel = {
+  vehicleId: number;
   logTypeName: string;
   specLabel: string;
   dueStatus: MaintenanceItemStatus;
@@ -45,10 +46,12 @@ export function getMaintenanceHistory(
     notes: log.notes,
   }));
 
-  const latestLog = getLatestLog(logs, logType.id, vehicleId);
+  const sortBy = logType.due_type === 'time' ? 'date' : 'mileage' as const;
+  const latestLog = getLatestLog(logs, logType.id, vehicleId, sortBy);
   const result = computeDueStatus(logType, latestLog, currentOdometer, fuelType, unit);
 
   return {
+    vehicleId,
     logTypeName,
     specLabel,
     dueStatus: result?.status ?? NEUTRAL_STATUS,

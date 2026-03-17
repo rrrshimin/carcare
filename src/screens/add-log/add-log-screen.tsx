@@ -11,7 +11,7 @@ import { routes } from '@/navigation/routes';
 import { getLogTypeById, type LogTypeRow } from '@/services/api/log-type-api';
 import { getDeviceByDeviceId } from '@/services/api/device-api';
 import { getDeviceId } from '@/services/storage-service';
-import { getCurrentVehicle } from '@/services/vehicle-service';
+import { getActiveVehicle } from '@/services/vehicle-service';
 import { addMaintenanceLog } from '@/features/maintenance/add-maintenance-log';
 import {
   validateLogInput,
@@ -57,7 +57,7 @@ export function AddLogScreen({ navigation, route }: Props) {
           const deviceId = await getDeviceId();
           const [lt, vehicle, device] = await Promise.all([
             getLogTypeById(logTypeId),
-            getCurrentVehicle(),
+            getActiveVehicle(),
             deviceId ? getDeviceByDeviceId(deviceId) : null,
           ]);
 
@@ -133,7 +133,7 @@ export function AddLogScreen({ navigation, route }: Props) {
     try {
       setSaving(true);
       await addMaintenanceLog(input, logType!, fuelType);
-      navigation.popToTop();
+      navigation.pop(2);
     } catch (e) {
       Alert.alert(
         'Save Failed',
@@ -187,10 +187,8 @@ export function AddLogScreen({ navigation, route }: Props) {
         }}
         keyboardType="number-pad"
         placeholder="0"
+        error={validationError?.field === 'mileage' ? validationError.message : null}
       />
-      {validationError?.field === 'mileage' ? (
-        <Text className="-mt-1 text-xs text-red-400">{validationError.message}</Text>
-      ) : null}
 
       <DateInputField
         label="Date"
@@ -207,6 +205,7 @@ export function AddLogScreen({ navigation, route }: Props) {
         value={specification}
         onChangeText={setSpecification}
         placeholder={specPlaceholder || specLabel}
+        maxLength={70}
       />
 
       <LabeledMultilineInput
@@ -214,6 +213,7 @@ export function AddLogScreen({ navigation, route }: Props) {
         placeholder="Optional notes"
         value={notes}
         onChangeText={setNotes}
+        maxLength={700}
       />
 
       {validationError?.field === 'general' ? (

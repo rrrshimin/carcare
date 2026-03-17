@@ -1,4 +1,5 @@
-import { createUserLog, type UserLogRow } from '@/services/api/user-log-api';
+import { createUserLog, deleteUserLog, type UserLogRow } from '@/services/api/user-log-api';
+import { getAppState } from '@/store/app-store';
 
 export type CreateLogInput = {
   carId: number;
@@ -44,13 +45,22 @@ export function validateLogInput(
   return null;
 }
 
+export async function deleteLog(logId: number, vehicleId: number): Promise<void> {
+  const { deviceId } = getAppState();
+  await deleteUserLog(logId, vehicleId, deviceId ?? undefined);
+}
+
 export async function submitLog(input: CreateLogInput): Promise<UserLogRow> {
-  return createUserLog({
-    car_id: input.carId,
-    log_type: input.logTypeId,
-    odo_log: input.odoLog,
-    change_date: input.changeDate,
-    specs: input.specs.trim() || null,
-    notes: input.notes.trim() || null,
-  });
+  const { deviceId } = getAppState();
+  return createUserLog(
+    {
+      car_id: input.carId,
+      log_type: input.logTypeId,
+      odo_log: input.odoLog,
+      change_date: input.changeDate,
+      specs: input.specs.trim() || null,
+      notes: input.notes.trim() || null,
+    },
+    deviceId ?? undefined,
+  );
 }

@@ -1,9 +1,6 @@
 import * as Crypto from 'expo-crypto';
 
-import {
-  createDeviceRecord,
-  getDeviceByDeviceId,
-} from '@/services/api/device-api';
+import { createDeviceRecord } from '@/services/api/device-api';
 import { getDeviceId, setDeviceId } from '@/services/storage-service';
 
 /**
@@ -11,7 +8,8 @@ import { getDeviceId, setDeviceId } from '@/services/storage-service';
  *
  * On first launch a UUID is generated and stored in AsyncStorage, then a
  * matching `user_devices` row is created in Supabase.  On subsequent launches
- * the stored UUID is reused and the backend record is verified.
+ * the stored UUID is reused.  The create_device RPC is idempotent (ON CONFLICT
+ * DO NOTHING) so calling it every time is safe and avoids a separate read call.
  */
 export async function ensureDeviceIdentity(): Promise<string> {
   let deviceId = await getDeviceId();
@@ -21,14 +19,7 @@ export async function ensureDeviceIdentity(): Promise<string> {
     await setDeviceId(deviceId);
   }
 
-  await ensureBackendRecord(deviceId);
+  await createDeviceRecord(deviceId);
 
   return deviceId;
-}
-
-async function ensureBackendRecord(deviceId: string): Promise<void> {
-  const existing = await getDeviceByDeviceId(deviceId);
-  if (existing) return;
-
-  await createDeviceRecord(deviceId);
 }

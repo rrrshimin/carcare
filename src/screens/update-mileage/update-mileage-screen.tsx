@@ -7,7 +7,8 @@ import { PrimaryButton } from '@/components/buttons/primary-button';
 import { LabeledTextInput } from '@/components/inputs/labeled-text-input';
 import { routes } from '@/navigation/routes';
 import {
-  getCurrentVehicle,
+  getActiveVehicle,
+  getMaxLogMileage,
   validateMileageInput,
   updateMileage,
 } from '@/services/vehicle-service';
@@ -25,6 +26,7 @@ export function UpdateMileageScreen({ navigation }: Props) {
   const [initLoading, setInitLoading] = useState(true);
   const [initError, setInitError] = useState<string | null>(null);
 
+  const [maxLogMileage, setMaxLogMileage] = useState(0);
   const [mileage, setMileage] = useState('');
   const [saving, setSaving] = useState(false);
   const [validationError, setValidationError] = useState<string | null>(null);
@@ -38,7 +40,7 @@ export function UpdateMileageScreen({ navigation }: Props) {
           setInitLoading(true);
           setInitError(null);
 
-          const v = await getCurrentVehicle();
+          const v = await getActiveVehicle();
           if (cancelled) return;
 
           if (!v) {
@@ -47,6 +49,9 @@ export function UpdateMileageScreen({ navigation }: Props) {
           }
 
           setVehicle(v);
+
+          const maxMileage = await getMaxLogMileage(v.id);
+          if (!cancelled) setMaxLogMileage(maxMileage);
         } catch (e) {
           if (!cancelled) {
             setInitError(
@@ -69,7 +74,7 @@ export function UpdateMileageScreen({ navigation }: Props) {
     if (!vehicle) return;
 
     const rawMileage = mileage.replace(/,/g, '').trim();
-    const error = validateMileageInput(rawMileage, currentOdometer);
+    const error = validateMileageInput(rawMileage, maxLogMileage);
     if (error) {
       setValidationError(error.message);
       return;
@@ -129,22 +134,18 @@ export function UpdateMileageScreen({ navigation }: Props) {
         </Text>
       </View>
 
-      <View className="gap-1">
-        <LabeledTextInput
-          label="New Mileage Value"
-          placeholder="Enter new mileage"
-          keyboardType="number-pad"
-          value={mileage ? formatWithCommas(mileage) : ''}
-          onChangeText={(text) => {
-            const digits = text.replace(/\D/g, '');
-            setMileage(digits);
-            if (validationError) setValidationError(null);
-          }}
-        />
-        {validationError ? (
-          <Text className="text-xs text-red-400">{validationError}</Text>
-        ) : null}
-      </View>
+      <LabeledTextInput
+        label="New Mileage Value"
+        placeholder="Enter new mileage"
+        keyboardType="number-pad"
+        value={mileage ? formatWithCommas(mileage) : ''}
+        onChangeText={(text) => {
+          const digits = text.replace(/\D/g, '');
+          setMileage(digits);
+          if (validationError) setValidationError(null);
+        }}
+        error={validationError}
+      />
 
       <PrimaryButton
         label={saving ? 'Updating…' : 'Update'}

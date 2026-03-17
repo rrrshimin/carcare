@@ -1,4 +1,5 @@
-import { Image, ScrollView, Text, View } from 'react-native';
+import { useEffect, useState } from 'react';
+import { Alert, Image, ScrollView, Text, View } from 'react-native';
 import { NativeStackScreenProps } from '@react-navigation/native-stack';
 
 import { EmptyState } from '@/components/feedback/empty-state';
@@ -6,8 +7,10 @@ import { ErrorState } from '@/components/feedback/error-state';
 import { LoadingState } from '@/components/feedback/loading-state';
 import { StatusBadge } from '@/components/feedback/status-badge';
 import { HistoryLogRow } from '@/components/lists/history-log-row';
+import { type HistoryLogEntry } from '@/features/maintenance/get-maintenance-history';
 import { useMaintenanceHistory } from '@/hooks/use-maintenance-history';
 import { routes } from '@/navigation/routes';
+import { deleteLog } from '@/services/log-service';
 import { AppStackParamList } from '@/types/navigation';
 
 type Props = NativeStackScreenProps<AppStackParamList, typeof routes.maintenanceHistory>;
@@ -15,6 +18,39 @@ type Props = NativeStackScreenProps<AppStackParamList, typeof routes.maintenance
 export function MaintenanceHistoryScreen({ route }: Props) {
   const { logTypeId, logTypeName } = route.params;
   const { data, loading, error } = useMaintenanceHistory(logTypeId);
+
+  const [entries, setEntries] = useState<HistoryLogEntry[]>([]);
+
+  useEffect(() => {
+    if (data) setEntries(data.entries);
+  }, [data]);
+
+  function handleDeleteLog(logId: number) {
+    if (!data) return;
+
+    Alert.alert(
+      'Delete Log',
+      'Are you sure you want to delete this maintenance log? This cannot be undone.',
+      [
+        { text: 'Cancel', style: 'cancel' },
+        {
+          text: 'Delete',
+          style: 'destructive',
+          onPress: async () => {
+            try {
+              await deleteLog(logId, data.vehicleId);
+              setEntries((prev) => prev.filter((e) => e.id !== logId));
+            } catch (e) {
+              Alert.alert(
+                'Delete Failed',
+                e instanceof Error ? e.message : 'Could not delete the log.',
+              );
+            }
+          },
+        },
+      ],
+    );
+  }
 
   if (loading) return <LoadingState />;
   if (error) return <ErrorState message={error} />;
@@ -47,7 +83,7 @@ export function MaintenanceHistoryScreen({ route }: Props) {
         </View>
       </View>
 
-      {data.entries.length === 0 ? (
+      {entries.length === 0 ? (
         <View className="items-center rounded-2xl bg-[#141A2B] p-6">
           <Text className="text-center text-sm text-[#A3ACBF]">
             No logs yet for {displayName}.
@@ -57,7 +93,7 @@ export function MaintenanceHistoryScreen({ route }: Props) {
           </Text>
         </View>
       ) : (
-        data.entries.map((entry) => (
+        entries.map((entry) => (
           <HistoryLogRow
             key={entry.id}
             specLabel={data.specLabel}
@@ -66,6 +102,7 @@ export function MaintenanceHistoryScreen({ route }: Props) {
             date={entry.date}
             notes={entry.notes}
             unit={data.unit}
+            onDelete={() => handleDeleteLog(entry.id)}
           />
         ))
       )}

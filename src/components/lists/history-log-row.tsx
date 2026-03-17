@@ -1,4 +1,4 @@
-import { Text, View } from 'react-native';
+import { Pressable, Text, View } from 'react-native';
 
 import { ContentCard } from '@/components/cards/content-card';
 import { CalendarIcon, TagIcon } from '@/components/icons/row-icons';
@@ -12,6 +12,7 @@ type HistoryLogRowProps = {
   date: string | null;
   notes: string | null;
   unit?: string;
+  onDelete?: () => void;
 };
 
 export function HistoryLogRow({
@@ -20,14 +21,29 @@ export function HistoryLogRow({
   date,
   notes,
   unit,
+  onDelete,
 }: HistoryLogRowProps) {
   return (
     <ContentCard>
-      {mileage != null ? (
-        <Text className="text-lg font-bold text-white">
-          {formatMileage(mileage, unit)}
-        </Text>
-      ) : null}
+      <View className="flex-row items-start justify-between">
+        <View className="flex-1">
+          {mileage != null ? (
+            <Text className="text-lg font-bold text-white">
+              {formatMileage(mileage, unit)}
+            </Text>
+          ) : null}
+        </View>
+
+        {onDelete ? (
+          <Pressable
+            onPress={onDelete}
+            hitSlop={10}
+            className="ml-2 rounded-lg p-1"
+          >
+            <Text className="text-base text-[#6B7490]">{'\uD83D\uDDD1'}</Text>
+          </Pressable>
+        ) : null}
+      </View>
 
       {date ? (
         <View className="mt-2 flex-row items-center gap-1.5">

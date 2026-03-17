@@ -11,14 +11,10 @@ import { GestureHandlerRootView } from 'react-native-gesture-handler';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 
 import { ErrorBoundary } from './src/components/feedback/error-boundary';
+import { AuthProvider } from './src/context/auth-context';
 import { AppNavigationContainer } from './src/navigation/app-navigation-container';
 
-// ─── APP ROOT ────────────────────────────────────────────────────────
-// Outermost wrapper. Controls font loading, safe areas, gesture support,
-// status bar appearance, and global error boundary.
 export default function App() {
-  // Poppins variants loaded here. If a weight is missing, text falls back to default.
-  // Add/remove weights here to change available typography across the app.
   const [fontsLoaded] = useFonts({
     Poppins: Poppins_400Regular,
     'Poppins-SemiBold': Poppins_600SemiBold,
@@ -29,14 +25,13 @@ export default function App() {
   if (!fontsLoaded) return null;
 
   return (
-    // flex:1 ensures the gesture root fills the screen
     <GestureHandlerRootView style={{ flex: 1 }}>
-      {/* SafeAreaProvider enables useSafeAreaInsets in child screens */}
       <SafeAreaProvider>
         <ErrorBoundary>
-          {/* "light" = white status bar icons on dark background */}
-          <StatusBar style="light" />
-          <AppNavigationContainer />
+          <AuthProvider>
+            <StatusBar style="light" />
+            <AppNavigationContainer />
+          </AuthProvider>
         </ErrorBoundary>
       </SafeAreaProvider>
     </GestureHandlerRootView>

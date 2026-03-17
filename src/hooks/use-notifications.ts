@@ -2,7 +2,7 @@ import { useEffect, useRef } from 'react';
 
 import { EVAL_COOLDOWN_MS } from '@/constants/notification-config';
 import { evaluateReminders } from '@/features/notifications/evaluate-reminders';
-import type { HomeData } from '@/hooks/use-home-data';
+import type { VehicleScreenData } from '@/hooks/use-vehicle-data';
 
 /**
  * Evaluates and schedules local notifications when home data is available.
@@ -16,7 +16,7 @@ import type { HomeData } from '@/hooks/use-home-data';
  * guard no duplicate notifications would fire — but skipping the work
  * avoids unnecessary permission checks and AsyncStorage reads.
  */
-export function useNotifications(data: HomeData | null): void {
+export function useNotifications(data: VehicleScreenData | null): void {
   const lastEvalAt = useRef(0);
 
   useEffect(() => {

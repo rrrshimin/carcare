@@ -4,7 +4,7 @@ import * as Clipboard from 'expo-clipboard';
 import { useFocusEffect } from '@react-navigation/native';
 
 import type { VehicleRow } from '@/services/api/vehicle-api';
-import { getCurrentVehicle } from '@/services/vehicle-service';
+import { getActiveVehicle } from '@/services/vehicle-service';
 import { enableSharing, disableSharing } from '@/services/share-service';
 import { buildShareUrl } from '@/utils/sharing';
 
@@ -31,7 +31,7 @@ export function useShareLink() {
       let cancelled = false;
       setState((s) => ({ ...s, loading: true, error: null }));
 
-      getCurrentVehicle()
+      getActiveVehicle()
         .then((v) => {
           if (!cancelled) setState((s) => ({ ...s, vehicle: v, loading: false }));
         })

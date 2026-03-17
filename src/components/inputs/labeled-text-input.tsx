@@ -9,6 +9,9 @@ type LabeledTextInputProps = {
   keyboardType?: 'default' | 'number-pad';
   maxLength?: number;
   rightElement?: ReactNode;
+  autoCapitalize?: 'none' | 'sentences' | 'words' | 'characters';
+  autoCorrect?: boolean;
+  error?: string | null;
 };
 
 // ── Labeled single-line text input ───────────────────────────────────
@@ -22,14 +25,18 @@ export function LabeledTextInput({
   keyboardType = 'default',
   maxLength,
   rightElement,
+  autoCapitalize,
+  autoCorrect,
+  error,
 }: LabeledTextInputProps) {
   return (
-    // gap-2 (8px) between label and field
     <View className="gap-2">
-      {/* Field label: 14px secondary gray */}
       <Text className="text-sm text-[#A3ACBF]">{label}</Text>
-      {/* Input container: min-h-11 (44px), card fill #141A2B, border #1F2740, rounded-xl (12px) */}
-      <View className="min-h-11 flex-row items-center rounded-xl border border-[#1F2740] bg-[#141A2B]">
+      <View
+        className={`min-h-11 flex-row items-center rounded-xl border bg-[#141A2B] ${
+          error ? 'border-red-500' : 'border-[#1F2740]'
+        }`}
+      >
         <TextInput
           className="flex-1 px-4 py-3 text-white"
           placeholder={placeholder ?? label}
@@ -39,10 +46,14 @@ export function LabeledTextInput({
           onChangeText={onChangeText}
           selectionColor="#367DFF"
           maxLength={maxLength}
+          autoCapitalize={autoCapitalize}
+          autoCorrect={autoCorrect}
         />
-        {/* rightElement slot: used for unit toggle (km/mi) on odometer input */}
         {rightElement ?? null}
       </View>
+      {error ? (
+        <Text className="text-xs text-red-400">{error}</Text>
+      ) : null}
     </View>
   );
 }

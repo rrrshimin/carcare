@@ -11,7 +11,7 @@ import { SetupFlowStackParamList } from '@/types/navigation';
 type Props = NativeStackScreenProps<SetupFlowStackParamList, typeof routes.splash>;
 
 export function SplashScreen({ navigation }: Props) {
-  const { isReady, onboardingCompleted, vehicleExists, error } =
+  const { isReady, onboardingCompleted, vehicleExists, vehicleCount, error } =
     useAppBootstrap();
   const hasNavigated = useRef(false);
 
@@ -27,18 +27,43 @@ export function SplashScreen({ navigation }: Props) {
     const target = resolveLaunchRoute({ onboardingCompleted, vehicleExists });
 
     if (target === routes.appFlow) {
-      navigation.dispatch(
-        CommonActions.reset({
-          index: 0,
-          routes: [{ name: routes.appFlow }],
-        }),
-      );
+      if (vehicleCount >= 2) {
+        navigation.dispatch(
+          CommonActions.reset({
+            index: 0,
+            routes: [
+              {
+                name: routes.appFlow,
+                state: { routes: [{ name: routes.garage }] },
+              },
+            ],
+          }),
+        );
+      } else {
+        navigation.dispatch(
+          CommonActions.reset({
+            index: 0,
+            routes: [
+              {
+                name: routes.appFlow,
+                state: {
+                  routes: [
+                    { name: routes.garage },
+                    { name: routes.vehicle },
+                  ],
+                  index: 1,
+                },
+              },
+            ],
+          }),
+        );
+      }
     } else {
       navigation.replace(target);
     }
 
     hasNavigated.current = true;
-  }, [isReady, onboardingCompleted, vehicleExists, error, navigation]);
+  }, [isReady, onboardingCompleted, vehicleExists, vehicleCount, error, navigation]);
 
   // ── Splash visual ────────────────────────────────────────────────────
   // Full-screen dark background with centered logo. Logo asset: assets/splash-icon.png.

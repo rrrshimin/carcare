@@ -4,7 +4,7 @@ import {
   SERVICE_REMINDER_COOLDOWN_DAYS,
 } from '@/constants/notification-config';
 import { getMaintenanceSummary } from '@/features/maintenance/get-maintenance-summary';
-import type { HomeData } from '@/hooks/use-home-data';
+import type { VehicleScreenData } from '@/hooks/use-vehicle-data';
 import {
   cancelScheduledNotification,
   scheduleLocalNotification,
@@ -21,7 +21,7 @@ import { daysBetween, daysFromNow, tomorrowMorning } from './date-helpers';
 import { scheduleMileageReminder } from './schedule-mileage-reminder';
 import { scheduleTimeBasedReminders } from './schedule-service-reminders';
 
-const SERVICE_COOLDOWN_KEY = 'carcare.last_service_reminder';
+const SERVICE_COOLDOWN_PREFIX = 'carcare.last_service_reminder';
 
 // ── Re-exports for backward compatibility / testability ──────────────
 
@@ -50,7 +50,7 @@ export function computeMileageTriggerDate(
  * Pure function — no side-effects, easy to unit-test.
  */
 export function collectDueItems(
-  data: HomeData,
+  data: VehicleScreenData,
 ): { id: number; name: string }[] {
   const summary = getMaintenanceSummary(data);
   const items: { id: number; name: string }[] = [];
@@ -88,13 +88,13 @@ export function buildServiceReminderBody(
  * This function ensures the reminder exists even if those primary
  * triggers were missed (e.g. app upgrade, AsyncStorage cleared).
  */
-async function evaluateMileageReminder(): Promise<void> {
-  let lastUpdate = await getLastMileageUpdate();
+async function evaluateMileageReminder(vehicleId: number): Promise<void> {
+  let lastUpdate = await getLastMileageUpdate(vehicleId);
 
   if (!lastUpdate) {
-    const now = new Date().toISOString();
-    await setLastMileageUpdate(now);
-    lastUpdate = now;
+    const fallback = await getLastMileageUpdate();
+    lastUpdate = fallback ?? new Date().toISOString();
+    await setLastMileageUpdate(lastUpdate, vehicleId);
   }
 
   await scheduleMileageReminder(lastUpdate);
@@ -113,7 +113,7 @@ async function evaluateMileageReminder(): Promise<void> {
  * Idempotent: re-scheduling with the same stable IDs replaces
  * existing scheduled notifications.
  */
-async function ensureTimeBasedNotifications(data: HomeData): Promise<void> {
+async function ensureTimeBasedNotifications(data: VehicleScreenData): Promise<void> {
   const { vehicle, logTypes, userLogs } = data;
   const timeBasedTypes = logTypes.filter((lt) => lt.due_type === 'time');
 
@@ -150,7 +150,7 @@ async function ensureTimeBasedNotifications(data: HomeData): Promise<void> {
  * can estimate driving patterns to predict threshold dates.
  */
 async function evaluateMileageBasedServiceReminders(
-  data: HomeData,
+  data: VehicleScreenData,
 ): Promise<void> {
   const summary = getMaintenanceSummary(data);
   const dueItems: { id: number; name: string }[] = [];
@@ -174,7 +174,8 @@ async function evaluateMileageBasedServiceReminders(
     return;
   }
 
-  const lastSent = await getStoredJson<string>(SERVICE_COOLDOWN_KEY);
+  const cooldownKey = `${SERVICE_COOLDOWN_PREFIX}.${data.vehicle.id}`;
+  const lastSent = await getStoredJson<string>(cooldownKey);
   if (lastSent) {
     const elapsed = daysBetween(new Date(lastSent), new Date());
     if (elapsed < SERVICE_REMINDER_COOLDOWN_DAYS) return;
@@ -190,7 +191,7 @@ async function evaluateMileageBasedServiceReminders(
   );
 
   if (sent) {
-    await setStoredJson(SERVICE_COOLDOWN_KEY, new Date().toISOString());
+    await setStoredJson(cooldownKey, new Date().toISOString());
   }
 }
 
@@ -212,7 +213,7 @@ async function evaluateMileageBasedServiceReminders(
  *   3. Mileage-based service reminders — REACTIVE ONLY, cannot be
  *      pre-scheduled (known limitation, see function above)
  *
- * Safe to call on every home-screen focus:
+ * Safe to call on every vehicle-screen focus:
  *   • Scheduling is idempotent (cancel-then-schedule with stable IDs).
  *   • Mileage-based service reminders have a 7-day cooldown.
  *   • The hook layer adds a 60-second debounce on top.
@@ -220,10 +221,10 @@ async function evaluateMileageBasedServiceReminders(
  * Uses `Promise.allSettled` so a failure in one area does not
  * prevent the others from being evaluated.
  */
-export async function evaluateReminders(data: HomeData): Promise<void> {
+export async function evaluateReminders(data: VehicleScreenData): Promise<void> {
   try {
     await Promise.allSettled([
-      evaluateMileageReminder(),
+      evaluateMileageReminder(data.vehicle.id),
       ensureTimeBasedNotifications(data),
       evaluateMileageBasedServiceReminders(data),
     ]);

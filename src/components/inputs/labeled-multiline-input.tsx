@@ -5,6 +5,8 @@ type LabeledMultilineInputProps = {
   value: string;
   onChangeText: (value: string) => void;
   placeholder?: string;
+  maxLength?: number;
+  error?: string | null;
 };
 
 // ── Multiline text input ─────────────────────────────────────────────
@@ -16,12 +18,16 @@ export function LabeledMultilineInput({
   value,
   onChangeText,
   placeholder,
+  maxLength,
+  error,
 }: LabeledMultilineInputProps) {
   return (
     <View className="gap-2">
       <Text className="text-sm text-[#A3ACBF]">{label}</Text>
       <TextInput
-        className="min-h-24 rounded-xl border border-[#1F2740] bg-[#141A2B] px-4 py-3 text-white"
+        className={`min-h-24 rounded-xl border bg-[#141A2B] px-4 py-3 text-white ${
+          error ? 'border-red-500' : 'border-[#1F2740]'
+        }`}
         placeholder={placeholder ?? label}
         placeholderTextColor="#A3ACBF"
         multiline
@@ -29,7 +35,11 @@ export function LabeledMultilineInput({
         onChangeText={onChangeText}
         selectionColor="#367DFF"
         textAlignVertical="top"
+        maxLength={maxLength}
       />
+      {error ? (
+        <Text className="text-xs text-red-400">{error}</Text>
+      ) : null}
     </View>
   );
 }

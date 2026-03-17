@@ -1,4 +1,4 @@
-import type { HomeData } from '@/hooks/use-home-data';
+import type { VehicleScreenData } from '@/hooks/use-vehicle-data';
 import type { MaintenanceItemStatus } from '@/types/maintenance';
 import { computeDueStatus, NEUTRAL_STATUS } from '@/utils/calculations/compute-due-status';
 import { getLatestLog } from '@/utils/calculations/get-latest-log';
@@ -28,7 +28,7 @@ export type MaintenanceSummary = MaintenanceSummaryCategory[];
  * Transforms raw Supabase rows into an array of category groups with
  * pre-computed due statuses, ready for the Home screen to render.
  */
-export function getMaintenanceSummary(data: HomeData): MaintenanceSummary {
+export function getMaintenanceSummary(data: VehicleScreenData): MaintenanceSummary {
   const { vehicle, device, categories, logTypes, userLogs } = data;
   const fuelType = vehicle.fuel_type;
   const currentOdometer = vehicle.current_odometer ?? 0;
@@ -41,7 +41,8 @@ export function getMaintenanceSummary(data: HomeData): MaintenanceSummary {
       );
 
       const items: MaintenanceSummaryItem[] = typesInCategory.map((logType) => {
-        const latestLog = getLatestLog(userLogs, logType.id, vehicle.id);
+        const sortBy = logType.due_type === 'time' ? 'date' : 'mileage' as const;
+        const latestLog = getLatestLog(userLogs, logType.id, vehicle.id, sortBy);
         const result = computeDueStatus(logType, latestLog, currentOdometer, fuelType, unit);
 
         return {

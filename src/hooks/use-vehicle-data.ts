@@ -5,10 +5,11 @@ import { getAllCategories, type LogCategoryRow } from '@/services/api/category-a
 import { getDeviceByDeviceId, type UserDeviceRow } from '@/services/api/device-api';
 import { getAllLogTypes, type LogTypeRow } from '@/services/api/log-type-api';
 import { getLogsByVehicleId, type UserLogRow } from '@/services/api/user-log-api';
-import { getVehicleByDeviceId, type VehicleRow } from '@/services/api/vehicle-api';
+import { getVehicleByDeviceId, getVehicleById, type VehicleRow } from '@/services/api/vehicle-api';
 import { getDeviceId } from '@/services/storage-service';
+import { getVehicleStore } from '@/store/vehicle-store';
 
-export type HomeData = {
+export type VehicleScreenData = {
   vehicle: VehicleRow;
   device: UserDeviceRow;
   categories: LogCategoryRow[];
@@ -16,14 +17,14 @@ export type HomeData = {
   userLogs: UserLogRow[];
 };
 
-type UseHomeDataResult = {
-  data: HomeData | null;
+type UseVehicleDataResult = {
+  data: VehicleScreenData | null;
   loading: boolean;
   error: string | null;
 };
 
-export function useHomeData(): UseHomeDataResult {
-  const [data, setData] = useState<HomeData | null>(null);
+export function useVehicleData(): UseVehicleDataResult {
+  const [data, setData] = useState<VehicleScreenData | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
@@ -42,8 +43,12 @@ export function useHomeData(): UseHomeDataResult {
             return;
           }
 
+          const { activeVehicleId } = getVehicleStore();
+
           const [vehicle, device, categories, logTypes] = await Promise.all([
-            getVehicleByDeviceId(deviceId),
+            activeVehicleId
+              ? getVehicleById(activeVehicleId, deviceId)
+              : getVehicleByDeviceId(deviceId),
             getDeviceByDeviceId(deviceId),
             getAllCategories(),
             getAllLogTypes(),
@@ -56,14 +61,14 @@ export function useHomeData(): UseHomeDataResult {
             return;
           }
 
-          const userLogs = await getLogsByVehicleId(vehicle.id);
+          const userLogs = await getLogsByVehicleId(vehicle.id, deviceId);
           if (cancelled) return;
 
           setData({ vehicle, device, categories, logTypes, userLogs });
         } catch (e) {
           if (!cancelled) {
             setError(
-              e instanceof Error ? e.message : 'Failed to load home data',
+              e instanceof Error ? e.message : 'Failed to load vehicle data',
             );
           }
         } finally {

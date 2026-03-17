@@ -1,5 +1,15 @@
 import { useMemo, useState } from 'react';
-import { Image, Pressable, ScrollView, Text, View } from 'react-native';
+import {
+  Image,
+  Keyboard,
+  KeyboardAvoidingView,
+  Platform,
+  Pressable,
+  ScrollView,
+  Text,
+  TouchableWithoutFeedback,
+  View,
+} from 'react-native';
 import { CommonActions } from '@react-navigation/native';
 import { NativeStackScreenProps } from '@react-navigation/native-stack';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -9,8 +19,9 @@ import { PrimaryButton } from '@/components/buttons/primary-button';
 import { LabeledTextInput } from '@/components/inputs/labeled-text-input';
 import { OptionPillGroup } from '@/components/inputs/option-pill-group';
 import { ScreenTitleBlock } from '@/components/layout/screen-title-block';
+import { useAuth } from '@/context/auth-context';
 import { routes } from '@/navigation/routes';
-import { createVehicle } from '@/services/vehicle-service';
+import { createVehicle, getAllVehicles } from '@/services/vehicle-service';
 import { SetupFlowStackParamList } from '@/types/navigation';
 import { DistanceUnit, FuelType, Transmission } from '@/types/vehicle';
 
@@ -36,6 +47,7 @@ function formatWithCommas(digits: string): string {
 
 export function AddVehicleScreen({ navigation }: Props) {
   const insets = useSafeAreaInsets();
+  const { isGuest } = useAuth();
   const [form, setForm] = useState<FormState>({
     imageUri: '',
     name: '',
@@ -46,6 +58,7 @@ export function AddVehicleScreen({ navigation }: Props) {
     unit: 'km',
   });
   const [error, setError] = useState<string | null>(null);
+  const [fieldErrors, setFieldErrors] = useState<Partial<Record<'name' | 'year' | 'odometer', string>>>({});
   const [submitting, setSubmitting] = useState(false);
 
   const currentYear = useMemo(() => new Date().getFullYear(), []);
@@ -53,6 +66,14 @@ export function AddVehicleScreen({ navigation }: Props) {
 
   function updateForm<K extends keyof FormState>(key: K, value: FormState[K]) {
     setForm((prev) => ({ ...prev, [key]: value }));
+    if (key === 'name' || key === 'year' || key === 'odometer') {
+      setFieldErrors((prev) => {
+        if (!prev[key as 'name' | 'year' | 'odometer']) return prev;
+        const next = { ...prev };
+        delete next[key as 'name' | 'year' | 'odometer'];
+        return next;
+      });
+    }
   }
 
   function handleYearChange(text: string) {
@@ -65,21 +86,33 @@ export function AddVehicleScreen({ navigation }: Props) {
     updateForm('odometer', digits);
   }
 
-  function validate(): string | null {
-    const parsedYear = Number(form.year);
-    const parsedOdometer = Number(form.odometer);
+  function validate(): boolean {
+    const errors: Partial<Record<'name' | 'year' | 'odometer', string>> = {};
 
     if (!form.name.trim()) {
-      return 'Vehicle name is required.';
-    }
-    if (!Number.isInteger(parsedYear) || parsedYear < 1900 || parsedYear > currentYear + 1) {
-      return 'Please enter a valid vehicle year.';
-    }
-    if (!Number.isFinite(parsedOdometer) || parsedOdometer < 0) {
-      return 'Current odometer must be a non-negative number.';
+      errors.name = 'Vehicle name is required.';
     }
 
-    return null;
+    if (!form.year || form.year.length !== 4) {
+      errors.year = 'Year must be exactly 4 digits.';
+    } else {
+      const parsedYear = Number(form.year);
+      if (!Number.isInteger(parsedYear) || parsedYear < 1900 || parsedYear > currentYear) {
+        errors.year = `Year must be between 1900 and ${currentYear}.`;
+      }
+    }
+
+    const parsedOdometer = Number(form.odometer);
+    if (form.odometer === '' || !Number.isFinite(parsedOdometer)) {
+      errors.odometer = 'Odometer is required.';
+    } else if (!Number.isInteger(parsedOdometer) || parsedOdometer < 0) {
+      errors.odometer = 'Odometer must be a non-negative whole number.';
+    } else if (parsedOdometer > 1_000_000) {
+      errors.odometer = 'Odometer cannot exceed 1,000,000.';
+    }
+
+    setFieldErrors(errors);
+    return Object.keys(errors).length === 0;
   }
 
   async function handlePickImage() {
@@ -107,11 +140,7 @@ export function AddVehicleScreen({ navigation }: Props) {
   }
 
   async function handleSubmit() {
-    const validationError = validate();
-    if (validationError) {
-      setError(validationError);
-      return;
-    }
+    if (!validate()) return;
 
     setError(null);
     setSubmitting(true);
@@ -126,12 +155,28 @@ export function AddVehicleScreen({ navigation }: Props) {
         unit: form.unit,
       });
 
-      navigation.dispatch(
-        CommonActions.reset({
-          index: 0,
-          routes: [{ name: routes.appFlow }],
-        }),
-      );
+      const vehicles = await getAllVehicles();
+
+      if (vehicles.length >= 2) {
+        navigation.dispatch(
+          CommonActions.reset({
+            index: 0,
+            routes: [
+              {
+                name: routes.appFlow,
+                state: { routes: [{ name: routes.garage }] },
+              },
+            ],
+          }),
+        );
+      } else {
+        navigation.dispatch(
+          CommonActions.reset({
+            index: 0,
+            routes: [{ name: routes.appFlow }],
+          }),
+        );
+      }
     } catch (e) {
       setError(
         e instanceof Error ? e.message : 'Failed to create vehicle. Please try again.',
@@ -169,87 +214,106 @@ export function AddVehicleScreen({ navigation }: Props) {
     </View>
   );
 
-  // ── Add Vehicle form layout ──────────────────────────────────────────
-  // ScrollView fills the screen. paddingTop accounts for safe area + extra 60px offset.
-  // paddingHorizontal 16px = screen margin. gap 12px between form fields.
-  // paddingBottom 32px = breathing room at bottom.
   return (
-    <ScrollView
+    <KeyboardAvoidingView
       className="flex-1 bg-[#0C111F]"
-      contentContainerStyle={{
-        paddingTop: insets.top + 24,
-        paddingHorizontal: 16,
-        paddingBottom: 32,
-        gap: 12,
-      }}
+      behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
     >
-      <ScreenTitleBlock title="Add Vehicle" subtitle="Let's add your vehicle to start tracking maintenance." />
+      <TouchableWithoutFeedback onPress={Keyboard.dismiss}>
+        <ScrollView
+          className="flex-1"
+          contentContainerStyle={{
+            paddingTop: insets.top + 24,
+            paddingHorizontal: 16,
+            paddingBottom: 32,
+            gap: 12,
+          }}
+          keyboardShouldPersistTaps="handled"
+        >
+          <ScreenTitleBlock title="Add Vehicle" subtitle="Let's add your vehicle to start tracking maintenance." />
 
-      {/* Vehicle photo upload area: h-44 (176px) tall.
-          Empty state: dashed border placeholder. Filled state: image with card border. */}
-      <View className="gap-2">
-        <Text className="text-sm text-[#A3ACBF]">Vehicle Photo</Text>
-        {form.imageUri ? (
-          <Pressable onPress={handlePickImage}>
-            <Image
-              source={{ uri: form.imageUri }}
-              className="h-44 w-full rounded-xl border border-[#1F2740] bg-[#141A2B]"
-              resizeMode="cover"
-            />
-          </Pressable>
-        ) : (
-          <Pressable
-            className="h-44 w-full items-center justify-center rounded-xl"
-            style={{ borderWidth: 1.5, borderStyle: 'dashed', borderColor: 'rgba(255,255,255,0.1)' }}
-            onPress={handlePickImage}
-          >
-            <Text className="text-2xl text-[#A3ACBF]">+</Text>
-            <Text className="mt-1 text-sm text-[#A3ACBF]">Upload Photo</Text>
-          </Pressable>
-        )}
-      </View>
+          <View className="gap-2">
+            <Text className="text-sm text-[#A3ACBF]">Vehicle Photo</Text>
+            {form.imageUri ? (
+              <Pressable onPress={handlePickImage}>
+                <Image
+                  source={{ uri: form.imageUri }}
+                  className="h-44 w-full rounded-xl border border-[#1F2740] bg-[#141A2B]"
+                  resizeMode="cover"
+                />
+              </Pressable>
+            ) : (
+              <Pressable
+                className="h-44 w-full items-center justify-center rounded-xl"
+                style={{ borderWidth: 1.5, borderStyle: 'dashed', borderColor: 'rgba(255,255,255,0.1)' }}
+                onPress={handlePickImage}
+              >
+                <Text className="text-2xl text-[#A3ACBF]">+</Text>
+                <Text className="mt-1 text-sm text-[#A3ACBF]">Upload Photo</Text>
+              </Pressable>
+            )}
+          </View>
 
-      <LabeledTextInput
-        label="Vehicle Name"
-        placeholder="Toyota Supra"
-        value={form.name}
-        onChangeText={(value) => updateForm('name', value)}
-      />
-      <LabeledTextInput
-        label="Year"
-        placeholder="2020"
-        keyboardType="number-pad"
-        maxLength={4}
-        value={form.year}
-        onChangeText={handleYearChange}
-      />
+          <LabeledTextInput
+            label="Vehicle Name"
+            placeholder="Toyota Supra"
+            value={form.name}
+            onChangeText={(value) => updateForm('name', value)}
+            error={fieldErrors.name}
+          />
+          <LabeledTextInput
+            label="Year"
+            placeholder="2020"
+            keyboardType="number-pad"
+            maxLength={4}
+            value={form.year}
+            onChangeText={handleYearChange}
+            error={fieldErrors.year}
+          />
 
-      <OptionPillGroup<FuelType>
-        label="Fuel Type"
-        options={fuelTypeOptions}
-        selected={form.fuelType}
-        onSelect={(value) => updateForm('fuelType', value)}
-      />
-      <OptionPillGroup<Transmission>
-        label="Transmission"
-        options={transmissionOptions}
-        selected={form.transmission}
-        onSelect={(value) => updateForm('transmission', value)}
-      />
+          <OptionPillGroup<FuelType>
+            label="Fuel Type"
+            options={fuelTypeOptions}
+            selected={form.fuelType}
+            onSelect={(value) => updateForm('fuelType', value)}
+          />
+          <OptionPillGroup<Transmission>
+            label="Transmission"
+            options={transmissionOptions}
+            selected={form.transmission}
+            onSelect={(value) => updateForm('transmission', value)}
+          />
 
-      <LabeledTextInput
-        label={`Current Odometer (${form.unit})`}
-        placeholder="0"
-        keyboardType="number-pad"
-        value={odometerDisplay}
-        onChangeText={handleOdometerChange}
-        rightElement={unitToggle}
-      />
+          <LabeledTextInput
+            label={`Current Odometer (${form.unit})`}
+            placeholder="0"
+            keyboardType="number-pad"
+            value={odometerDisplay}
+            onChangeText={handleOdometerChange}
+            rightElement={unitToggle}
+            error={fieldErrors.odometer}
+          />
 
-      {/* Form error text: warning amber #FFB020, 14px */}
-      {error ? <Text className="text-sm text-[#FFB020]">{error}</Text> : null}
+          {error ? <Text className="text-sm text-red-400">{error}</Text> : null}
 
-      <PrimaryButton className="mt-2" disabled={submitting} onPress={handleSubmit} label={submitting ? 'Adding...' : 'Add'} />
-    </ScrollView>
+          <PrimaryButton className="mt-2" disabled={submitting} onPress={handleSubmit} label={submitting ? 'Adding...' : 'Add'} />
+
+          {isGuest && (
+            <Pressable
+              className="mt-4 items-center py-2"
+              onPress={() => navigation.navigate(routes.auth)}
+            >
+              <Text
+                className="text-sm text-[#A3ACBF]"
+                style={{ fontFamily: 'Poppins' }}
+              >
+                Already have an account?{' '}
+                <Text className="font-semibold text-[#367DFF]">Log in</Text>
+              </Text>
+            </Pressable>
+          )}
+        </ScrollView>
+      </TouchableWithoutFeedback>
+    </KeyboardAvoidingView>
   );
 }

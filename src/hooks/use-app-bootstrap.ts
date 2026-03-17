@@ -1,8 +1,9 @@
 import { useEffect, useState } from 'react';
 
 import { ensureDeviceIdentity } from '@/services/device-identity-service';
+import { loadEntitlement } from '@/hooks/use-entitlement';
 import { getOnboardingCompleted } from '@/services/storage-service';
-import { vehicleExistsForDevice } from '@/services/vehicle-service';
+import { getVehicleCountForDevice } from '@/services/vehicle-service';
 import { setAppState } from '@/store/app-store';
 
 export type BootstrapResult = {
@@ -10,12 +11,14 @@ export type BootstrapResult = {
   deviceId: string | null;
   onboardingCompleted: boolean;
   vehicleExists: boolean;
+  vehicleCount: number;
   error: string | null;
 };
 
 /**
  * Initialises device identity, checks onboarding state, and verifies
  * vehicle existence against the backend (not just local cache).
+ * Returns vehicleCount so the splash can decide between Garage and Home.
  */
 export function useAppBootstrap(): BootstrapResult {
   const [result, setResult] = useState<BootstrapResult>({
@@ -23,6 +26,7 @@ export function useAppBootstrap(): BootstrapResult {
     deviceId: null,
     onboardingCompleted: false,
     vehicleExists: false,
+    vehicleCount: 0,
     error: null,
   });
 
@@ -40,7 +44,10 @@ export function useAppBootstrap(): BootstrapResult {
 
         setAppState({ deviceId, onboardingCompleted });
 
-        const vehicleExists = await vehicleExistsForDevice(deviceId);
+        const [vehicleCount] = await Promise.all([
+          getVehicleCountForDevice(deviceId),
+          loadEntitlement(),
+        ]);
 
         if (cancelled) return;
 
@@ -48,7 +55,8 @@ export function useAppBootstrap(): BootstrapResult {
           isReady: true,
           deviceId,
           onboardingCompleted,
-          vehicleExists,
+          vehicleExists: vehicleCount > 0,
+          vehicleCount,
           error: null,
         });
       } catch (e) {

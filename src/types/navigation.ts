@@ -4,10 +4,13 @@ export type SetupFlowStackParamList = {
   [routes.splash]: undefined;
   [routes.onboarding]: undefined;
   [routes.addVehicle]: undefined;
+  [routes.auth]: undefined;
+  [routes.username]: undefined;
 };
 
 export type AppStackParamList = {
-  [routes.home]: undefined;
+  [routes.vehicle]: undefined;
+  [routes.garage]: undefined;
   [routes.selectLogType]: {
     categoryId: number;
     categoryName: string;
@@ -21,7 +24,12 @@ export type AppStackParamList = {
     logTypeName: string;
   };
   [routes.updateMileage]: undefined;
+  [routes.editVehicle]: { vehicleId: number };
   [routes.shareLink]: undefined;
+  [routes.paywall]: undefined;
+  [routes.account]: undefined;
+  [routes.auth]: undefined;
+  [routes.username]: undefined;
 };
 
 export type RootStackParamList = {

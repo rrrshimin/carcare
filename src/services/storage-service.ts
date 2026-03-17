@@ -24,12 +24,18 @@ export async function setDeviceId(deviceId: string): Promise<void> {
   await AsyncStorage.setItem(storageKeys.deviceId, deviceId);
 }
 
-export async function getLastMileageUpdate(): Promise<string | null> {
-  return AsyncStorage.getItem(storageKeys.lastMileageUpdate);
+export async function getLastMileageUpdate(vehicleId?: number): Promise<string | null> {
+  const key = vehicleId
+    ? `${storageKeys.lastMileageUpdate}.${vehicleId}`
+    : storageKeys.lastMileageUpdate;
+  return AsyncStorage.getItem(key);
 }
 
-export async function setLastMileageUpdate(isoDate: string): Promise<void> {
-  await AsyncStorage.setItem(storageKeys.lastMileageUpdate, isoDate);
+export async function setLastMileageUpdate(isoDate: string, vehicleId?: number): Promise<void> {
+  const key = vehicleId
+    ? `${storageKeys.lastMileageUpdate}.${vehicleId}`
+    : storageKeys.lastMileageUpdate;
+  await AsyncStorage.setItem(key, isoDate);
 }
 
 export async function getStoredJson<T>(key: string): Promise<T | null> {

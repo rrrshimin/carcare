@@ -2,10 +2,16 @@ import { createNativeStackNavigator } from '@react-navigation/native-stack';
 
 import { theme } from '@/constants/theme';
 import { routes } from '@/navigation/routes';
+import { AccountScreen } from '@/screens/account/account-screen';
 import { AddLogScreen } from '@/screens/add-log/add-log-screen';
-import { HomeScreen } from '@/screens/home/home-screen';
+import { AuthScreen } from '@/screens/auth/auth-screen';
+import { UsernameScreen } from '@/screens/auth/username-screen';
+import { GarageScreen } from '@/screens/garage/garage-screen';
+import { VehicleScreen } from '@/screens/vehicle/vehicle-screen';
 import { MaintenanceHistoryScreen } from '@/screens/maintenance-history/maintenance-history-screen';
 import { SelectLogTypeScreen } from '@/screens/select-log-type/select-log-type-screen';
+import { EditVehicleScreen } from '@/screens/edit-vehicle/edit-vehicle-screen';
+import { PaywallScreen } from '@/screens/paywall/paywall-screen';
 import { ShareLinkScreen } from '@/screens/share-link/share-link-screen';
 import { UpdateMileageScreen } from '@/screens/update-mileage/update-mileage-screen';
 import { AppStackParamList } from '@/types/navigation';
@@ -19,7 +25,7 @@ const Stack = createNativeStackNavigator<AppStackParamList>();
 export function AppNavigator() {
   return (
     <Stack.Navigator
-      initialRouteName={routes.home}
+      initialRouteName={routes.vehicle}
       screenOptions={{
         headerStyle: { backgroundColor: theme.colors.background },
         headerTintColor: theme.colors.textPrimary,
@@ -27,12 +33,18 @@ export function AppNavigator() {
         headerBackTitleVisible: false,
       }}
     >
-      <Stack.Screen name={routes.home} component={HomeScreen} options={{ headerShown: false }} />
+      <Stack.Screen name={routes.vehicle} component={VehicleScreen} options={{ headerShown: false }} />
+      <Stack.Screen name={routes.garage} component={GarageScreen} options={{ headerShown: false }} />
       <Stack.Screen name={routes.selectLogType} component={SelectLogTypeScreen} options={{ title: 'Select Log Type' }} />
       <Stack.Screen name={routes.addLog} component={AddLogScreen} options={{ title: 'Add Log' }} />
       <Stack.Screen name={routes.maintenanceHistory} component={MaintenanceHistoryScreen} options={{ title: 'Maintenance History' }} />
       <Stack.Screen name={routes.updateMileage} component={UpdateMileageScreen} options={{ title: 'Update Mileage' }} />
+      <Stack.Screen name={routes.editVehicle} component={EditVehicleScreen} options={{ title: 'Edit Vehicle' }} />
       <Stack.Screen name={routes.shareLink} component={ShareLinkScreen} options={{ title: 'Share' }} />
+      <Stack.Screen name={routes.paywall} component={PaywallScreen} options={{ headerShown: false, presentation: 'modal' }} />
+      <Stack.Screen name={routes.account} component={AccountScreen} options={{ title: 'Account' }} />
+      <Stack.Screen name={routes.auth} component={AuthScreen} options={{ title: 'Sign in' }} />
+      <Stack.Screen name={routes.username} component={UsernameScreen} options={{ title: 'Username', headerBackVisible: false }} />
     </Stack.Navigator>
   );
 }
