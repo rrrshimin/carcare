@@ -2,6 +2,13 @@ import type { UserProfile } from '@/types/auth';
 
 import { supabase } from './supabase-client';
 
+function generatePublicId(): string {
+  const digits = Math.floor(Math.random() * 1_000_000)
+    .toString()
+    .padStart(6, '0');
+  return `CC-${digits}`;
+}
+
 export async function getProfileByAuthId(
   authUserId: string,
 ): Promise<UserProfile | null> {
@@ -15,18 +22,32 @@ export async function getProfileByAuthId(
   return data as UserProfile | null;
 }
 
+const MAX_PUBLIC_ID_RETRIES = 5;
+
 export async function createProfile(
   authUserId: string,
   username: string,
 ): Promise<UserProfile> {
-  const { data, error } = await supabase
-    .from('user_profiles')
-    .insert({ auth_user_id: authUserId, username: username.trim() })
-    .select()
-    .single();
+  for (let attempt = 0; attempt < MAX_PUBLIC_ID_RETRIES; attempt++) {
+    const publicId = generatePublicId();
+    const { data, error } = await supabase
+      .from('user_profiles')
+      .insert({
+        auth_user_id: authUserId,
+        username: username.trim(),
+        public_id: publicId,
+      })
+      .select()
+      .single();
 
-  if (error) throw new Error(error.message);
-  return data as UserProfile;
+    if (!error) return data as UserProfile;
+
+    const isUniqueViolation =
+      error.code === '23505' && error.message.includes('public_id');
+    if (!isUniqueViolation) throw new Error(error.message);
+  }
+
+  throw new Error('Could not generate a unique CarCare ID. Please try again.');
 }
 
 export async function updateProfileUsername(

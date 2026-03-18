@@ -13,6 +13,7 @@ type HistoryLogRowProps = {
   notes: string | null;
   unit?: string;
   onDelete?: () => void;
+  readOnly?: boolean;
 };
 
 export function HistoryLogRow({
@@ -22,6 +23,7 @@ export function HistoryLogRow({
   notes,
   unit,
   onDelete,
+  readOnly,
 }: HistoryLogRowProps) {
   return (
     <ContentCard>
@@ -34,7 +36,7 @@ export function HistoryLogRow({
           ) : null}
         </View>
 
-        {onDelete ? (
+        {onDelete && !readOnly ? (
           <Pressable
             onPress={onDelete}
             hitSlop={10}
@@ -44,6 +46,14 @@ export function HistoryLogRow({
           </Pressable>
         ) : null}
       </View>
+
+      {readOnly ? (
+        <View className="mt-1">
+          <Text className="text-[10px] text-[#6B7490]" style={{ fontFamily: 'Poppins' }}>
+            Logged by previous owner
+          </Text>
+        </View>
+      ) : null}
 
       {date ? (
         <View className="mt-2 flex-row items-center gap-1.5">

@@ -13,6 +13,7 @@ import { SelectLogTypeScreen } from '@/screens/select-log-type/select-log-type-s
 import { EditVehicleScreen } from '@/screens/edit-vehicle/edit-vehicle-screen';
 import { PaywallScreen } from '@/screens/paywall/paywall-screen';
 import { ShareLinkScreen } from '@/screens/share-link/share-link-screen';
+import { TransferScreen } from '@/screens/transfer/transfer-screen';
 import { UpdateMileageScreen } from '@/screens/update-mileage/update-mileage-screen';
 import { AppStackParamList } from '@/types/navigation';
 
@@ -42,6 +43,7 @@ export function AppNavigator() {
       <Stack.Screen name={routes.editVehicle} component={EditVehicleScreen} options={{ title: 'Edit Vehicle' }} />
       <Stack.Screen name={routes.shareLink} component={ShareLinkScreen} options={{ title: 'Share' }} />
       <Stack.Screen name={routes.paywall} component={PaywallScreen} options={{ headerShown: false, presentation: 'modal' }} />
+      <Stack.Screen name={routes.transfer} component={TransferScreen} options={{ title: 'Transfer Vehicle' }} />
       <Stack.Screen name={routes.account} component={AccountScreen} options={{ title: 'Account' }} />
       <Stack.Screen name={routes.auth} component={AuthScreen} options={{ title: 'Sign in' }} />
       <Stack.Screen name={routes.username} component={UsernameScreen} options={{ title: 'Username', headerBackVisible: false }} />

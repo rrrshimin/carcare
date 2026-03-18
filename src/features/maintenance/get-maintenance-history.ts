@@ -12,6 +12,7 @@ export type HistoryLogEntry = {
   mileage: number | null;
   date: string | null;
   notes: string | null;
+  createdByAuthId: string | null;
 };
 
 export type MaintenanceHistoryViewModel = {
@@ -44,6 +45,7 @@ export function getMaintenanceHistory(
     mileage: log.odo_log,
     date: log.change_date,
     notes: log.notes,
+    createdByAuthId: log.created_by_auth_id ?? null,
   }));
 
   const sortBy = logType.due_type === 'time' ? 'date' : 'mileage' as const;

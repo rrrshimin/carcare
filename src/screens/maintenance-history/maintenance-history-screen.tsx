@@ -7,6 +7,7 @@ import { ErrorState } from '@/components/feedback/error-state';
 import { LoadingState } from '@/components/feedback/loading-state';
 import { StatusBadge } from '@/components/feedback/status-badge';
 import { HistoryLogRow } from '@/components/lists/history-log-row';
+import { useAuth } from '@/context/auth-context';
 import { type HistoryLogEntry } from '@/features/maintenance/get-maintenance-history';
 import { useMaintenanceHistory } from '@/hooks/use-maintenance-history';
 import { routes } from '@/navigation/routes';
@@ -18,6 +19,8 @@ type Props = NativeStackScreenProps<AppStackParamList, typeof routes.maintenance
 export function MaintenanceHistoryScreen({ route }: Props) {
   const { logTypeId, logTypeName } = route.params;
   const { data, loading, error } = useMaintenanceHistory(logTypeId);
+  const { session } = useAuth();
+  const currentAuthId = session?.user?.id ?? null;
 
   const [entries, setEntries] = useState<HistoryLogEntry[]>([]);
 
@@ -25,8 +28,22 @@ export function MaintenanceHistoryScreen({ route }: Props) {
     if (data) setEntries(data.entries);
   }, [data]);
 
-  function handleDeleteLog(logId: number) {
+  function isOwnLog(entry: HistoryLogEntry): boolean {
+    if (!currentAuthId) return true;
+    if (!entry.createdByAuthId) return true;
+    return entry.createdByAuthId === currentAuthId;
+  }
+
+  function handleDeleteLog(logId: number, entry: HistoryLogEntry) {
     if (!data) return;
+
+    if (!isOwnLog(entry)) {
+      Alert.alert(
+        'Cannot delete',
+        'This log was created by a previous owner. You can only delete logs you created.',
+      );
+      return;
+    }
 
     Alert.alert(
       'Delete Log',
@@ -102,7 +119,8 @@ export function MaintenanceHistoryScreen({ route }: Props) {
             date={entry.date}
             notes={entry.notes}
             unit={data.unit}
-            onDelete={() => handleDeleteLog(entry.id)}
+            onDelete={() => handleDeleteLog(entry.id, entry)}
+            readOnly={!isOwnLog(entry)}
           />
         ))
       )}

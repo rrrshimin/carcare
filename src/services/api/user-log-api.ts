@@ -95,7 +95,7 @@ export async function createUserLog(
   if (session?.user?.id) {
     const { data, error } = await supabase
       .from('user_logs')
-      .insert(payload)
+      .insert({ ...payload, created_by_auth_id: session.user.id })
       .select()
       .single();
     if (error) throw new Error(error.message);

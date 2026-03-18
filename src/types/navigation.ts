@@ -30,6 +30,7 @@ export type AppStackParamList = {
   [routes.account]: undefined;
   [routes.auth]: undefined;
   [routes.username]: undefined;
+  [routes.transfer]: { vehicleId: number };
 };
 
 export type RootStackParamList = {

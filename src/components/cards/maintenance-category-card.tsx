@@ -8,9 +8,9 @@ import type { CategoryDisplay, ItemDisplay } from '@/types/maintenance';
 type MaintenanceCategoryCardProps = {
   category: CategoryDisplay;
   items: ItemDisplay[];
-  onPressNewLog: (category: CategoryDisplay) => void;
+  onPressNewLog?: (category: CategoryDisplay) => void;
   onPressItem: (item: ItemDisplay) => void;
-  onPressAddLog: (item: ItemDisplay) => void;
+  onPressAddLog?: (item: ItemDisplay) => void;
 };
 
 // ── Maintenance category card (Home screen) ──────────────────────────
@@ -45,7 +45,9 @@ export function MaintenanceCategoryCard({
           {/* Category name: 18px ExtraBold white (matches theme.typography.cardTitle) */}
           <Text className="text-lg font-extrabold text-white">{category.name}</Text>
         </View>
-        <ActionChipButton className="mt-[5px]" label="New Log" onPress={() => onPressNewLog(category)} />
+        {onPressNewLog ? (
+          <ActionChipButton className="mt-[5px]" label="New Log" onPress={() => onPressNewLog(category)} />
+        ) : null}
       </View>
 
       {/* Items list: mt-2 (8px) gap below header, gap-2 (8px) between rows */}

@@ -7,7 +7,7 @@ import { Vehicle } from '@/types/vehicle';
 
 type VehicleHeroCardProps = {
   vehicle: Vehicle;
-  onPressShare: () => void;
+  onPressShare?: () => void;
   onPressOptions?: () => void;
 };
 
@@ -47,14 +47,18 @@ export function VehicleHeroCard({ vehicle, onPressShare, onPressOptions }: Vehic
         </Text>
 
         <View className="mt-4 w-full flex-row items-center gap-3">
-          <View className="flex-1">
-            <OutlineButton
-              className="items-center justify-center w-full bg-[#0C111F] px-8"
-              textClassName="text-center text-white"
-              label="Share"
-              onPress={onPressShare}
-            />
-          </View>
+          {onPressShare ? (
+            <View className="flex-1">
+              <OutlineButton
+                className="items-center justify-center w-full bg-[#0C111F] px-8"
+                textClassName="text-center text-white"
+                label="Share"
+                onPress={onPressShare}
+              />
+            </View>
+          ) : (
+            <View className="flex-1" />
+          )}
           {onPressOptions ? (
             <Pressable
               onPress={onPressOptions}

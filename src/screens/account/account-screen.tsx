@@ -1,5 +1,6 @@
-import { useEffect } from 'react';
+import { useEffect, useState } from 'react';
 import { Alert, Linking, Pressable, ScrollView, Text, View } from 'react-native';
+import * as Clipboard from 'expo-clipboard';
 import { CommonActions } from '@react-navigation/native';
 import type { NativeStackScreenProps } from '@react-navigation/native-stack';
 
@@ -48,15 +49,28 @@ function GuestContent({ onSignIn }: { onSignIn: () => void }) {
 
 function RegisteredContent({
   username,
+  publicId,
   planLabel,
+  planAction,
   onUpgrade,
   onSignOut,
 }: {
   username: string;
+  publicId: string | null;
   planLabel: string;
+  planAction: string | null;
   onUpgrade: () => void;
   onSignOut: () => void;
 }) {
+  const [copied, setCopied] = useState(false);
+
+  async function handleCopyId() {
+    if (!publicId) return;
+    await Clipboard.setStringAsync(publicId);
+    setCopied(true);
+    setTimeout(() => setCopied(false), 2000);
+  }
+
   return (
     <View className="gap-4">
       <View className="rounded-2xl bg-[#141A2B] p-5">
@@ -74,32 +88,90 @@ function RegisteredContent({
         </Text>
       </View>
 
-      <Pressable
-        className="rounded-2xl bg-[#141A2B] p-5"
-        onPress={onUpgrade}
-        style={({ pressed }) => ({ opacity: pressed ? 0.85 : 1 })}
-      >
+      <View className="rounded-2xl bg-[#141A2B] p-5">
         <Text
           className="text-sm text-[#A3ACBF]"
           style={{ fontFamily: 'Poppins' }}
         >
-          Plan
+          Your CarCare ID
         </Text>
-        <View className="mt-1 flex-row items-center justify-between">
+        <Text
+          className="mt-1 text-xs text-[#6B7490]"
+          style={{ fontFamily: 'Poppins' }}
+          numberOfLines={1}
+        >
+          Share this ID with others so they can transfer vehicles to you.
+        </Text>
+        <View className="mt-3 flex-row items-center gap-3">
+          <View className="flex-1 rounded-xl bg-[#0C111F] px-3 py-2.5">
+            <Text
+              className="text-sm text-white"
+              style={{ fontFamily: 'Poppins-SemiBold' }}
+              selectable
+              numberOfLines={1}
+            >
+              {publicId ?? '—'}
+            </Text>
+          </View>
+          <Pressable
+            onPress={handleCopyId}
+            disabled={!publicId}
+            className="rounded-xl bg-[#1A2240] px-4 py-2.5"
+            style={({ pressed }) => ({ opacity: !publicId ? 0.4 : pressed ? 0.7 : 1 })}
+          >
+            <Text
+              className="text-sm text-[#367DFF]"
+              style={{ fontFamily: 'Poppins-SemiBold' }}
+            >
+              {copied ? 'Copied' : 'Copy'}
+            </Text>
+          </Pressable>
+        </View>
+      </View>
+
+      {planAction ? (
+        <Pressable
+          className="rounded-2xl bg-[#141A2B] p-5"
+          onPress={onUpgrade}
+          style={({ pressed }) => ({ opacity: pressed ? 0.85 : 1 })}
+        >
           <Text
-            className="text-lg text-white"
+            className="text-sm text-[#A3ACBF]"
+            style={{ fontFamily: 'Poppins' }}
+          >
+            Plan
+          </Text>
+          <View className="mt-1 flex-row items-center justify-between">
+            <Text
+              className="text-lg text-white"
+              style={{ fontFamily: 'Poppins-SemiBold' }}
+            >
+              {planLabel}
+            </Text>
+            <Text
+              className="text-sm text-[#367DFF]"
+              style={{ fontFamily: 'Poppins-SemiBold' }}
+            >
+              {planAction}
+            </Text>
+          </View>
+        </Pressable>
+      ) : (
+        <View className="rounded-2xl bg-[#141A2B] p-5">
+          <Text
+            className="text-sm text-[#A3ACBF]"
+            style={{ fontFamily: 'Poppins' }}
+          >
+            Plan
+          </Text>
+          <Text
+            className="mt-1 text-lg text-white"
             style={{ fontFamily: 'Poppins-SemiBold' }}
           >
             {planLabel}
           </Text>
-          <Text
-            className="text-sm text-[#367DFF]"
-            style={{ fontFamily: 'Poppins-SemiBold' }}
-          >
-            Manage
-          </Text>
         </View>
-      </Pressable>
+      )}
 
       <OutlineButton label="Sign out" onPress={onSignOut} />
     </View>
@@ -142,6 +214,8 @@ export function AccountScreen({ navigation }: Props) {
     limit === Infinity
       ? `${getPlanDisplayName(plan)} \u2014 Unlimited cars`
       : `${getPlanDisplayName(plan)} \u2014 ${limit} ${limit === 1 ? 'car' : 'cars'}`;
+
+  const planAction = plan === 'pro' ? null : plan === 'base' ? 'Upgrade' : 'Manage';
 
   useEffect(() => {
     if (isAuthenticated && needsUsername) {
@@ -193,7 +267,9 @@ export function AccountScreen({ navigation }: Props) {
       {isAuthenticated && userProfile ? (
         <RegisteredContent
           username={userProfile.username}
+          publicId={userProfile.public_id}
           planLabel={planLabel}
+          planAction={planAction}
           onUpgrade={handleUpgrade}
           onSignOut={handleSignOut}
         />

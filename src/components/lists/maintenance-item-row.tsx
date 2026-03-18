@@ -6,7 +6,7 @@ import type { ItemDisplay } from '@/types/maintenance';
 type MaintenanceItemRowProps = {
   item: ItemDisplay;
   onPressItem: (item: ItemDisplay) => void;
-  onPressAddLog: (item: ItemDisplay) => void;
+  onPressAddLog?: (item: ItemDisplay) => void;
 };
 
 // ── Single maintenance item row ──────────────────────────────────────
@@ -30,14 +30,15 @@ export function MaintenanceItemRow({ item, onPressItem, onPressAddLog }: Mainten
           </View>
         </View>
 
-        {/* Inline "Add Log" mini-button: card fill, border, link-blue text */}
-        <Pressable
-          className="ml-3 rounded-lg border border-[#1F2740] bg-[#141A2B] px-3 py-2"
-          onPress={() => onPressAddLog(item)}
-          style={({ pressed }) => ({ opacity: pressed ? 0.85 : undefined })}
-        >
-          <Text className="text-xs font-semibold text-[#367DFF]">Add Log</Text>
-        </Pressable>
+        {onPressAddLog ? (
+          <Pressable
+            className="ml-3 rounded-lg border border-[#1F2740] bg-[#141A2B] px-3 py-2"
+            onPress={() => onPressAddLog(item)}
+            style={({ pressed }) => ({ opacity: pressed ? 0.85 : undefined })}
+          >
+            <Text className="text-xs font-semibold text-[#367DFF]">Add Log</Text>
+          </Pressable>
+        ) : null}
       </View>
     </Pressable>
   );

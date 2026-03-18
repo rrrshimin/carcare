@@ -1,23 +1,25 @@
 import { useCallback, useMemo, useRef, useState } from 'react';
-import { Image, Pressable, ScrollView, Text, View } from 'react-native';
+import { Alert, Image, Pressable, ScrollView, Text, View } from 'react-native';
 import { CommonActions, useFocusEffect } from '@react-navigation/native';
 import type { NativeStackScreenProps } from '@react-navigation/native-stack';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { PrimaryButton } from '@/components/buttons/primary-button';
+import { TransferRequestCard } from '@/components/cards/transfer-request-card';
 import { SignInGateModal } from '@/components/feedback/sign-in-gate-modal';
 import { LoadingState } from '@/components/feedback/loading-state';
 import { ErrorState } from '@/components/feedback/error-state';
 import { AccountIcon, ChevronRightIcon, DangerIcon, SubscriptionStarIcon } from '@/components/icons/app-icons';
 import { useAuth } from '@/context/auth-context';
 import { useEntitlement, loadEntitlement } from '@/hooks/use-entitlement';
+import { useTransferRequests } from '@/hooks/use-transfer-requests';
 import { getVehicleDangerCount } from '@/features/maintenance/get-vehicle-danger-count';
 import { routes } from '@/navigation/routes';
 import { canAddVehicle } from '@/services/entitlement-service';
+import { acceptTransfer, declineTransfer } from '@/services/transfer-service';
 import type { VehicleRow } from '@/services/api/vehicle-api';
 import type { LogTypeRow } from '@/services/api/log-type-api';
 import type { UserLogRow } from '@/services/api/user-log-api';
-import { getAllCategories } from '@/services/api/category-api';
 import { getAllLogTypes } from '@/services/api/log-type-api';
 import { getLogsByVehicleId } from '@/services/api/user-log-api';
 import { getDeviceByDeviceId } from '@/services/api/device-api';
@@ -122,7 +124,16 @@ function VehicleCard({
           </View>
 
           <View className="flex-row items-center gap-2">
-            {dangerCount > 0 ? (
+            {vehicle.is_active === false ? (
+              <View className="rounded-full bg-[#1A2240] px-2.5 py-1">
+                <Text
+                  className="text-xs text-[#6B7490]"
+                  style={{ fontFamily: 'Poppins-SemiBold' }}
+                >
+                  Inactive
+                </Text>
+              </View>
+            ) : dangerCount > 0 ? (
               <View className="flex-row items-center gap-1 rounded-full bg-[#FF8126]/15 px-2.5 py-1">
                 <DangerIcon size={14} />
                 <Text
@@ -147,10 +158,12 @@ export function GarageScreen({ navigation }: Props) {
   const insets = useSafeAreaInsets();
   const { isGuest, isAuthenticated } = useAuth();
   const { plan } = useEntitlement();
+  const { requests: transferRequests, refresh: refreshTransfers } = useTransferRequests(isAuthenticated);
   const [vehiclesWithDanger, setVehiclesWithDanger] = useState<VehicleWithDanger[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [gateVisible, setGateVisible] = useState(false);
+  const [transferBusy, setTransferBusy] = useState<number | null>(null);
 
   const pendingAddCar = useRef(false);
 
@@ -277,6 +290,45 @@ export function GarageScreen({ navigation }: Props) {
     navigation.navigate(routes.auth);
   }
 
+  async function handleAcceptTransfer(requestId: number) {
+    setTransferBusy(requestId);
+    try {
+      await acceptTransfer(requestId);
+      await refreshTransfers();
+      const result = await getAllVehicles();
+      setVehicleCount(result.length);
+    } catch (e) {
+      Alert.alert('Error', e instanceof Error ? e.message : 'Could not accept transfer.');
+    } finally {
+      setTransferBusy(null);
+    }
+  }
+
+  async function handleDeclineTransfer(requestId: number) {
+    Alert.alert(
+      'Decline Transfer',
+      'Are you sure you want to decline this vehicle transfer?',
+      [
+        { text: 'Cancel', style: 'cancel' },
+        {
+          text: 'Decline',
+          style: 'destructive',
+          onPress: async () => {
+            setTransferBusy(requestId);
+            try {
+              await declineTransfer(requestId);
+              await refreshTransfers();
+            } catch (e) {
+              Alert.alert('Error', e instanceof Error ? e.message : 'Could not decline transfer.');
+            } finally {
+              setTransferBusy(null);
+            }
+          },
+        },
+      ],
+    );
+  }
+
   if (loading) return <LoadingState />;
   if (error) return <ErrorState message={error} />;
 
@@ -336,6 +388,27 @@ export function GarageScreen({ navigation }: Props) {
         {showUpgradeCard ? (
           <View className="mt-4">
             <ExpandGarageCard onPress={() => navigation.navigate(routes.paywall)} />
+          </View>
+        ) : null}
+
+        {/* Incoming transfer requests */}
+        {transferRequests.length > 0 ? (
+          <View style={{ gap: 12, marginTop: 16 }}>
+            <Text
+              className="text-sm text-[#A3ACBF]"
+              style={{ fontFamily: 'Poppins-SemiBold' }}
+            >
+              Transfer Requests
+            </Text>
+            {transferRequests.map((req) => (
+              <TransferRequestCard
+                key={req.requestId}
+                request={req}
+                onAccept={() => handleAcceptTransfer(req.requestId)}
+                onDecline={() => handleDeclineTransfer(req.requestId)}
+                busy={transferBusy === req.requestId}
+              />
+            ))}
           </View>
         ) : null}
 

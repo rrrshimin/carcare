@@ -1,6 +1,6 @@
-import { useMemo, useState } from 'react';
+import { useCallback, useMemo, useState } from 'react';
 import { Alert, Pressable, ScrollView, Text, View } from 'react-native';
-import { CommonActions } from '@react-navigation/native';
+import { CommonActions, useFocusEffect } from '@react-navigation/native';
 import type { NativeStackScreenProps } from '@react-navigation/native-stack';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
@@ -11,12 +11,16 @@ import { VehicleHeroCard } from '@/components/cards/vehicle-hero-card';
 import { ErrorState } from '@/components/feedback/error-state';
 import { LoadingState } from '@/components/feedback/loading-state';
 import { BottomSheet, BottomSheetOption } from '@/components/feedback/bottom-sheet';
+import { SignInGateModal } from '@/components/feedback/sign-in-gate-modal';
 import { BackArrowIcon } from '@/components/icons/app-icons';
+import { useAuth } from '@/context/auth-context';
 import { getMaintenanceSummary } from '@/features/maintenance/get-maintenance-summary';
 import { useVehicleData } from '@/hooks/use-vehicle-data';
 import { useNotifications } from '@/hooks/use-notifications';
 import { routes } from '@/navigation/routes';
 import { deleteVehicle } from '@/services/vehicle-service';
+import { getPendingTransfer, cancelTransfer } from '@/services/transfer-service';
+import type { PendingVehicleTransfer } from '@/types/transfer';
 import type { CategoryDisplay, ItemDisplay } from '@/types/maintenance';
 import type { AppStackParamList } from '@/types/navigation';
 import type { DistanceUnit, FuelType, Transmission, Vehicle } from '@/types/vehicle';
@@ -41,10 +45,27 @@ function mapVehicle(row: VehicleRow, device: UserDeviceRow): Vehicle {
 
 export function VehicleScreen({ navigation }: Props) {
   const { data, loading, error } = useVehicleData();
+  const { isGuest, isAuthenticated } = useAuth();
   const insets = useSafeAreaInsets();
   const [deleting, setDeleting] = useState(false);
   const [sheetVisible, setSheetVisible] = useState(false);
+  const [gateVisible, setGateVisible] = useState(false);
+  const [pendingTransfer, setPendingTransfer] = useState<PendingVehicleTransfer | null>(null);
   useNotifications(data);
+
+  const isActive = data?.vehicle?.is_active !== false;
+  const isLocked = !!pendingTransfer;
+
+  useFocusEffect(
+    useCallback(() => {
+      if (!data?.vehicle || !isAuthenticated) return;
+      let cancelled = false;
+      getPendingTransfer(data.vehicle.id)
+        .then((pt) => { if (!cancelled) setPendingTransfer(pt); })
+        .catch(() => {});
+      return () => { cancelled = true; };
+    }, [data?.vehicle?.id, isAuthenticated]),
+  );
 
   const vehicle = useMemo(() => {
     if (!data) return null;
@@ -88,6 +109,40 @@ export function VehicleScreen({ navigation }: Props) {
     if (!data) return;
     setSheetVisible(false);
     navigation.navigate(routes.editVehicle, { vehicleId: data.vehicle.id });
+  }
+
+  function handleTransferVehicle() {
+    if (!data) return;
+    setSheetVisible(false);
+    if (isGuest) {
+      setGateVisible(true);
+      return;
+    }
+    navigation.navigate(routes.transfer, { vehicleId: data.vehicle.id });
+  }
+
+  async function handleCancelTransfer() {
+    if (!pendingTransfer) return;
+    setSheetVisible(false);
+    Alert.alert(
+      'Cancel Transfer',
+      'Are you sure you want to cancel this transfer request?',
+      [
+        { text: 'No', style: 'cancel' },
+        {
+          text: 'Yes, cancel',
+          style: 'destructive',
+          onPress: async () => {
+            try {
+              await cancelTransfer(pendingTransfer.requestId);
+              setPendingTransfer(null);
+            } catch (e) {
+              Alert.alert('Error', e instanceof Error ? e.message : 'Could not cancel transfer.');
+            }
+          },
+        },
+      ],
+    );
   }
 
   function handleDeleteVehicle() {
@@ -162,7 +217,11 @@ export function VehicleScreen({ navigation }: Props) {
   }
 
   function handleBack() {
-    navigation.goBack();
+    if (navigation.canGoBack()) {
+      navigation.goBack();
+    } else {
+      navigation.navigate(routes.garage);
+    }
   }
 
   if (loading) return <LoadingState />;
@@ -193,6 +252,15 @@ export function VehicleScreen({ navigation }: Props) {
 
   return (
     <View className="flex-1 bg-[#0C111F]">
+      <SignInGateModal
+        visible={gateVisible}
+        onSignIn={() => {
+          setGateVisible(false);
+          navigation.navigate(routes.auth);
+        }}
+        onCancel={() => setGateVisible(false)}
+      />
+
       {/* Back button (top-left) */}
       <Pressable
         onPress={handleBack}
@@ -209,8 +277,21 @@ export function VehicleScreen({ navigation }: Props) {
         onClose={() => setSheetVisible(false)}
         title={vehicle.name}
       >
-        <BottomSheetOption label="Edit Vehicle" onPress={handleEditVehicle} />
-        <BottomSheetOption label="Delete" onPress={handleDeleteVehicle} destructive />
+        {isLocked ? (
+          <>
+            <BottomSheetOption label="Cancel Transfer" onPress={handleCancelTransfer} destructive />
+          </>
+        ) : !isActive ? (
+          <>
+            <BottomSheetOption label="Delete" onPress={handleDeleteVehicle} destructive />
+          </>
+        ) : (
+          <>
+            <BottomSheetOption label="Edit Vehicle" onPress={handleEditVehicle} />
+            <BottomSheetOption label="Transfer Vehicle" onPress={handleTransferVehicle} />
+            <BottomSheetOption label="Delete" onPress={handleDeleteVehicle} destructive />
+          </>
+        )}
       </BottomSheet>
 
       <ScrollView
@@ -219,25 +300,66 @@ export function VehicleScreen({ navigation }: Props) {
       >
         <VehicleHeroCard
           vehicle={vehicle}
-          onPressShare={() => navigation.navigate(routes.shareLink)}
+          onPressShare={isLocked || !isActive ? undefined : () => navigation.navigate(routes.shareLink)}
           onPressOptions={() => setSheetVisible(true)}
         />
 
         <View style={{ paddingHorizontal: 16, gap: 13, marginTop: 13 }}>
-          <MileageCard
-            currentOdometer={vehicle.currentOdometer}
-            unit={vehicle.unit}
-            onPressUpdate={() => navigation.navigate(routes.updateMileage)}
-          />
+          {isLocked && pendingTransfer ? (
+            <View className="rounded-2xl bg-[#1A2240] p-4">
+              <Text
+                className="text-sm text-[#FF8126]"
+                style={{ fontFamily: 'Poppins-SemiBold' }}
+              >
+                Transfer pending
+              </Text>
+              <Text
+                className="mt-1 text-xs text-[#A3ACBF]"
+                style={{ fontFamily: 'Poppins' }}
+              >
+                Waiting for @{pendingTransfer.recipientUsername} to respond. Editing, logging, sharing, and deleting are blocked until the request is resolved.
+              </Text>
+            </View>
+          ) : null}
+
+          {!isActive ? (
+            <View className="rounded-2xl bg-[#1A2240] p-4">
+              <Text
+                className="text-sm text-[#A3ACBF]"
+                style={{ fontFamily: 'Poppins-SemiBold' }}
+              >
+                Inactive vehicle
+              </Text>
+              <Text
+                className="mt-1 text-xs text-[#6B7490]"
+                style={{ fontFamily: 'Poppins' }}
+              >
+                Your plan does not support another active vehicle. Upgrade your plan to unlock full functionality.
+              </Text>
+            </View>
+          ) : null}
+
+          {isActive && !isLocked ? (
+            <MileageCard
+              currentOdometer={vehicle.currentOdometer}
+              unit={vehicle.unit}
+              onPressUpdate={() => navigation.navigate(routes.updateMileage)}
+            />
+          ) : (
+            <MileageCard
+              currentOdometer={vehicle.currentOdometer}
+              unit={vehicle.unit}
+            />
+          )}
 
           {filteredSummary.map((group) => (
             <MaintenanceCategoryCard
               key={group.id}
               category={group}
               items={group.items}
-              onPressNewLog={handlePressNewLog}
+              onPressNewLog={isActive && !isLocked ? handlePressNewLog : undefined}
               onPressItem={handlePressItem}
-              onPressAddLog={handlePressAddLog}
+              onPressAddLog={isActive && !isLocked ? handlePressAddLog : undefined}
             />
           ))}
         </View>

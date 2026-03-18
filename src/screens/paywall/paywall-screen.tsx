@@ -6,7 +6,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { PrimaryButton } from '@/components/buttons/primary-button';
 import { BackArrowIcon, CheckIcon } from '@/components/icons/app-icons';
 import { routes } from '@/navigation/routes';
-import { loadEntitlement } from '@/hooks/use-entitlement';
+import { loadEntitlement, useEntitlement } from '@/hooks/use-entitlement';
 import { updateDeviceSubscription } from '@/services/api/device-api';
 import { getDeviceId } from '@/services/storage-service';
 import type { SubscriptionPlan } from '@/types/entitlement';
@@ -67,32 +67,41 @@ function FeatureRow({ label }: { label: string }) {
 function PlanCard({
   config,
   selected,
+  isCurrent,
+  disabled,
   onSelect,
 }: {
   config: PlanConfig;
   selected: boolean;
+  isCurrent: boolean;
+  disabled: boolean;
   onSelect: () => void;
 }) {
-  const borderColor = selected ? '#34D399' : '#141A2B';
+  const borderColor = isCurrent
+    ? '#34D399'
+    : selected
+      ? '#34D399'
+      : '#141A2B';
 
   return (
     <Pressable
       onPress={onSelect}
+      disabled={disabled}
       className="rounded-2xl border-2 bg-[#141A2B] p-5"
-      style={[
-        { borderColor },
-        ({ pressed }) => ({ opacity: pressed ? 0.9 : 1 }),
-      ]}
+      style={({ pressed }) => ({
+        borderColor,
+        opacity: disabled ? 0.6 : pressed ? 0.9 : 1,
+      })}
     >
-      {/* Header row: radio + title + price */}
       <View className="flex-row items-center justify-between">
         <View className="flex-row items-center gap-3">
-          {/* Radio indicator */}
           <View
             className="h-5 w-5 items-center justify-center rounded-full border-2"
-            style={{ borderColor: selected ? '#34D399' : '#2A3350' }}
+            style={{
+              borderColor: isCurrent || selected ? '#34D399' : '#2A3350',
+            }}
           >
-            {selected ? (
+            {isCurrent || selected ? (
               <View className="h-2.5 w-2.5 rounded-full bg-[#34D399]" />
             ) : null}
           </View>
@@ -119,22 +128,22 @@ function PlanCard({
         </View>
       </View>
 
-      {/* Badge */}
-      {config.badge ? (
+      {(config.badge || isCurrent) ? (
         <View className="mt-0 ml-8">
           <Text
-            className="text-xs text-[#F2C50F]"
-            style={{ fontFamily: 'Poppins-SemiBold' }}
+            className="text-xs"
+            style={{
+              fontFamily: 'Poppins-SemiBold',
+              color: isCurrent ? '#34D399' : '#F2C50F',
+            }}
           >
-            {config.badge}
+            {isCurrent ? 'Current plan' : config.badge}
           </Text>
         </View>
       ) : null}
 
-      {/* Divider */}
       <View className="my-3 h-px bg-[#1F2740]" />
 
-      {/* Features */}
       <View>
         {config.features.map((f) => (
           <FeatureRow key={f} label={f} />
@@ -144,10 +153,70 @@ function PlanCard({
   );
 }
 
+function ProActiveContent({
+  onRestore,
+  restoring,
+}: {
+  onRestore: () => void;
+  restoring: boolean;
+}) {
+  return (
+    <View>
+      <View className="rounded-2xl border-2 border-[#34D399] bg-[#141A2B] p-6">
+        <Text
+          className="text-center text-lg text-white"
+          style={{ fontFamily: 'Poppins-Bold' }}
+        >
+          You're on Pro
+        </Text>
+        <Text
+          className="mt-2 text-center text-sm text-[#A3ACBF]"
+          style={{ fontFamily: 'Poppins' }}
+        >
+          You have access to all features and unlimited vehicles.
+        </Text>
+
+        <View className="my-5 h-px bg-[#1F2740]" />
+
+        {PLANS[1].features.map((f) => (
+          <FeatureRow key={f} label={f} />
+        ))}
+      </View>
+
+      <Pressable
+        className="mt-4 items-center py-2"
+        onPress={onRestore}
+        disabled={restoring}
+      >
+        <Text
+          className="text-sm text-[#A3ACBF]"
+          style={{ fontFamily: 'Poppins' }}
+        >
+          Restore purchases
+        </Text>
+      </Pressable>
+    </View>
+  );
+}
+
 export function PaywallScreen({ navigation }: Props) {
   const insets = useSafeAreaInsets();
-  const [selectedPlan, setSelectedPlan] = useState<SubscriptionPlan>('base');
+  const { plan: currentPlan } = useEntitlement();
+
+  const defaultSelection: SubscriptionPlan =
+    currentPlan === 'base' ? 'pro' : 'base';
+  const [selectedPlan, setSelectedPlan] =
+    useState<SubscriptionPlan>(defaultSelection);
   const [purchasing, setPurchasing] = useState(false);
+
+  const isPro = currentPlan === 'pro';
+  const isBase = currentPlan === 'base';
+
+  function getCtaLabel(): string {
+    if (purchasing) return 'Processing...';
+    if (isBase) return 'Upgrade to Pro';
+    return 'Upgrade Now';
+  }
 
   async function handlePurchase() {
     setPurchasing(true);
@@ -187,7 +256,6 @@ export function PaywallScreen({ navigation }: Props) {
 
   return (
     <View className="flex-1 bg-[#0C111F]">
-      {/* Back button */}
       <Pressable
         onPress={() => navigation.goBack()}
         className="absolute z-10 rounded-full bg-black/40 p-2"
@@ -205,7 +273,6 @@ export function PaywallScreen({ navigation }: Props) {
           paddingBottom: 32,
         }}
       >
-        {/* Logo */}
         <View className="items-center">
           <Image
             source={require('../../icons/subscription-logo.png')}
@@ -214,54 +281,65 @@ export function PaywallScreen({ navigation }: Props) {
           />
         </View>
 
-        {/* Title */}
         <Text
           className="mt-6 text-center text-2xl text-white"
           style={{ fontFamily: 'Poppins-ExtraBold' }}
         >
-          Upgrade Your Garage
+          {isPro ? 'Your Plan' : 'Upgrade Your Garage'}
         </Text>
         <Text
           className="mt-2 text-center text-sm text-[#A3ACBF]"
           style={{ fontFamily: 'Poppins' }}
         >
-          Track multiple vehicles and unlock all features
+          {isPro
+            ? 'Manage your subscription'
+            : 'Track multiple vehicles and unlock all features'}
         </Text>
 
-        {/* Plan cards */}
-        <View style={{ gap: 16, marginTop: 24 }}>
-          {PLANS.map((config) => (
-            <PlanCard
-              key={config.plan}
-              config={config}
-              selected={selectedPlan === config.plan}
-              onSelect={() => setSelectedPlan(config.plan)}
+        {isPro ? (
+          <View style={{ marginTop: 24 }}>
+            <ProActiveContent
+              onRestore={handleRestore}
+              restoring={purchasing}
             />
-          ))}
-        </View>
+          </View>
+        ) : (
+          <>
+            <View style={{ gap: 16, marginTop: 24 }}>
+              {PLANS.map((config) => (
+                <PlanCard
+                  key={config.plan}
+                  config={config}
+                  selected={selectedPlan === config.plan}
+                  isCurrent={currentPlan === config.plan}
+                  disabled={currentPlan === config.plan}
+                  onSelect={() => setSelectedPlan(config.plan)}
+                />
+              ))}
+            </View>
 
-        {/* CTA */}
-        <View className="mt-8">
-          <PrimaryButton
-            label={purchasing ? 'Processing...' : 'Upgrade Now'}
-            onPress={handlePurchase}
-            disabled={purchasing}
-          />
-        </View>
+            <View className="mt-8">
+              <PrimaryButton
+                label={getCtaLabel()}
+                onPress={handlePurchase}
+                disabled={purchasing}
+              />
+            </View>
 
-        {/* Restore */}
-        <Pressable
-          className="mt-4 items-center py-2"
-          onPress={handleRestore}
-          disabled={purchasing}
-        >
-          <Text
-            className="text-sm text-[#A3ACBF]"
-            style={{ fontFamily: 'Poppins' }}
-          >
-            Restore purchases
-          </Text>
-        </Pressable>
+            <Pressable
+              className="mt-4 items-center py-2"
+              onPress={handleRestore}
+              disabled={purchasing}
+            >
+              <Text
+                className="text-sm text-[#A3ACBF]"
+                style={{ fontFamily: 'Poppins' }}
+              >
+                Restore purchases
+              </Text>
+            </Pressable>
+          </>
+        )}
       </ScrollView>
     </View>
   );

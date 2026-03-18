@@ -14,6 +14,7 @@ export const routes = {
   account: 'Account',
   auth: 'Auth',
   username: 'Username',
+  transfer: 'Transfer',
   setupFlow: 'SetupFlow',
   appFlow: 'AppFlow',
 } as const;

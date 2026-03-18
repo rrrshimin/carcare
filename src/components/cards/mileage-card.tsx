@@ -7,7 +7,7 @@ import { formatMileage } from '@/utils/formatting/format-mileage';
 type MileageCardProps = {
   currentOdometer: number;
   unit: DistanceUnit;
-  onPressUpdate: () => void;
+  onPressUpdate?: () => void;
 };
 
 // ── Mileage display card (Home screen) ───────────────────────────────
@@ -35,14 +35,15 @@ export function MileageCard({ currentOdometer, unit, onPressUpdate }: MileageCar
           </View>
         </View>
 
-        {/* Inline Update button: 40px height, brand blue, rounded-lg (8px), wider padding */}
-        <Pressable
-          className="min-h-10 items-center justify-center rounded-lg bg-[#0051E8] px-6 py-2"
-          onPress={onPressUpdate}
-          style={({ pressed }) => ({ opacity: pressed ? 0.9 : undefined })}
-        >
-          <Text className="text-sm font-semibold text-white">Update</Text>
-        </Pressable>
+        {onPressUpdate ? (
+          <Pressable
+            className="min-h-10 items-center justify-center rounded-lg bg-[#0051E8] px-6 py-2"
+            onPress={onPressUpdate}
+            style={({ pressed }) => ({ opacity: pressed ? 0.9 : undefined })}
+          >
+            <Text className="text-sm font-semibold text-white">Update</Text>
+          </Pressable>
+        ) : null}
       </View>
     </ContentCard>
   );
