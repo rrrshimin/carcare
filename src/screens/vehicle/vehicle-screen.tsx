@@ -1,12 +1,13 @@
 import { useCallback, useMemo, useState } from 'react';
 import { Alert, Pressable, ScrollView, Text, View } from 'react-native';
-import { CommonActions, useFocusEffect } from '@react-navigation/native';
+import { CommonActions, StackActions, useFocusEffect } from '@react-navigation/native';
 import type { NativeStackScreenProps } from '@react-navigation/native-stack';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { PrimaryButton } from '@/components/buttons/primary-button';
 import { MaintenanceCategoryCard } from '@/components/cards/maintenance-category-card';
 import { MileageCard } from '@/components/cards/mileage-card';
+import { SpendingCard } from '@/components/cards/spending-card';
 import { VehicleHeroCard } from '@/components/cards/vehicle-hero-card';
 import { ErrorState } from '@/components/feedback/error-state';
 import { LoadingState } from '@/components/feedback/loading-state';
@@ -15,6 +16,9 @@ import { SignInGateModal } from '@/components/feedback/sign-in-gate-modal';
 import { BackArrowIcon } from '@/components/icons/app-icons';
 import { useAuth } from '@/context/auth-context';
 import { getMaintenanceSummary } from '@/features/maintenance/get-maintenance-summary';
+import { useCurrency } from '@/hooks/use-currency';
+import { useEntitlement } from '@/hooks/use-entitlement';
+import { useSpendingRowSummary } from '@/hooks/use-spending-summary';
 import { useVehicleData } from '@/hooks/use-vehicle-data';
 import { useNotifications } from '@/hooks/use-notifications';
 import { routes } from '@/navigation/routes';
@@ -44,7 +48,7 @@ function mapVehicle(row: VehicleRow, device: UserDeviceRow): Vehicle {
 }
 
 export function VehicleScreen({ navigation }: Props) {
-  const { data, loading, error } = useVehicleData();
+  const { data, loading, error, retry } = useVehicleData();
   const { isGuest, isAuthenticated } = useAuth();
   const insets = useSafeAreaInsets();
   const [deleting, setDeleting] = useState(false);
@@ -52,6 +56,9 @@ export function VehicleScreen({ navigation }: Props) {
   const [gateVisible, setGateVisible] = useState(false);
   const [pendingTransfer, setPendingTransfer] = useState<PendingVehicleTransfer | null>(null);
   useNotifications(data);
+  const { currencySymbol } = useCurrency(data?.device.currency_code);
+  const { plan } = useEntitlement();
+  const spendingRow = useSpendingRowSummary(data, currencySymbol, plan !== 'free');
 
   const isActive = data?.vehicle?.is_active !== false;
   const isLocked = !!pendingTransfer;
@@ -88,6 +95,8 @@ export function VehicleScreen({ navigation }: Props) {
     navigation.navigate(routes.selectLogType, {
       categoryId: category.id,
       categoryName: category.name,
+      vehicleFuelType: data?.vehicle.fuel_type ?? null,
+      vehicleTransmission: data?.vehicle.transmission ?? null,
     });
   }
 
@@ -217,15 +226,11 @@ export function VehicleScreen({ navigation }: Props) {
   }
 
   function handleBack() {
-    if (navigation.canGoBack()) {
-      navigation.goBack();
-    } else {
-      navigation.navigate(routes.garage);
-    }
+    navigation.dispatch(StackActions.popTo(routes.garage));
   }
 
-  if (loading) return <LoadingState />;
-  if (error) return <ErrorState message={error} />;
+  if (loading && !data) return <LoadingState />;
+  if (error && !data) return <ErrorState message={error} onRetry={retry} />;
   if (!vehicle) {
     return (
       <View className="flex-1 items-center justify-center bg-[#0C111F] px-6">
@@ -314,7 +319,7 @@ export function VehicleScreen({ navigation }: Props) {
                 Transfer pending
               </Text>
               <Text
-                className="mt-1 text-xs text-[#A3ACBF]"
+                className="mt-1 text-[12px] text-[#A3ACBF]"
                 style={{ fontFamily: 'Poppins' }}
               >
                 Waiting for @{pendingTransfer.recipientUsername} to respond. Editing, logging, sharing, and deleting are blocked until the request is resolved.
@@ -331,13 +336,19 @@ export function VehicleScreen({ navigation }: Props) {
                 Inactive vehicle
               </Text>
               <Text
-                className="mt-1 text-xs text-[#6B7490]"
+                className="mt-1 text-[12px] text-[#6B7490]"
                 style={{ fontFamily: 'Poppins' }}
               >
                 Your plan does not support another active vehicle. Upgrade your plan to unlock full functionality.
               </Text>
             </View>
           ) : null}
+
+          <SpendingCard
+            line1={spendingRow.line1}
+            line2={spendingRow.line2}
+            onPress={() => navigation.navigate(routes.spending)}
+          />
 
           {isActive && !isLocked ? (
             <MileageCard

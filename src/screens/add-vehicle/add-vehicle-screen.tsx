@@ -189,22 +189,23 @@ export function AddVehicleScreen({ navigation }: Props) {
   // Inline km/mi toggle rendered inside the odometer input's rightElement slot.
   // Selected: brand blue fill. Unselected: dark background fill.
   const unitToggle = (
-    <View className="mr-2 flex-row items-center gap-1">
+    <View className="mr-2 flex-row items-center gap-2">
       {unitOptions.map((u) => (
         <Pressable
           key={u}
           className={
             form.unit === u
-              ? 'rounded-lg bg-[#0051E8] px-3 py-1.5'
-              : 'rounded-lg bg-[#0C111F] px-3 py-1.5'
+              ? 'min-h-9 items-center justify-center rounded-lg bg-[#0051E8] px-4 py-2'
+              : 'min-h-9 items-center justify-center rounded-lg bg-[#0C111F] px-4 py-2'
           }
           onPress={() => updateForm('unit', u)}
+          hitSlop={4}
         >
           <Text
             className={
               form.unit === u
-                ? 'text-xs font-semibold text-white'
-                : 'text-xs font-semibold text-[#A3ACBF]'
+                ? 'text-[13px] font-semibold text-white'
+                : 'text-[13px] font-semibold text-[#A3ACBF]'
             }
           >
             {u}

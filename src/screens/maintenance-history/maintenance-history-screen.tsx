@@ -18,7 +18,7 @@ type Props = NativeStackScreenProps<AppStackParamList, typeof routes.maintenance
 
 export function MaintenanceHistoryScreen({ route }: Props) {
   const { logTypeId, logTypeName } = route.params;
-  const { data, loading, error } = useMaintenanceHistory(logTypeId);
+  const { data, loading, error, retry } = useMaintenanceHistory(logTypeId);
   const { session } = useAuth();
   const currentAuthId = session?.user?.id ?? null;
 
@@ -69,8 +69,8 @@ export function MaintenanceHistoryScreen({ route }: Props) {
     );
   }
 
-  if (loading) return <LoadingState />;
-  if (error) return <ErrorState message={error} />;
+  if (loading && !data) return <LoadingState />;
+  if (error && !data) return <ErrorState message={error} onRetry={retry} />;
   if (!data) return <EmptyState title="No data available" />;
 
   const displayName = data.logTypeName !== 'Unknown' ? data.logTypeName : logTypeName;
@@ -87,7 +87,7 @@ export function MaintenanceHistoryScreen({ route }: Props) {
           />
         ) : (
           <View className="h-16 w-16 items-center justify-center rounded-2xl bg-[#141A2B]">
-            <Text className="text-xs font-bold text-[#A3ACBF]">
+            <Text className="text-[13px] font-bold text-[#A3ACBF]">
               {displayName.substring(0, 2).toUpperCase()}
             </Text>
           </View>
@@ -105,7 +105,7 @@ export function MaintenanceHistoryScreen({ route }: Props) {
           <Text className="text-center text-sm text-[#A3ACBF]">
             No logs yet for {displayName}.
           </Text>
-          <Text className="mt-1 text-center text-xs text-[#A3ACBF]">
+          <Text className="mt-1 text-center text-[13px] text-[#A3ACBF]">
             Add your first maintenance log from the home screen.
           </Text>
         </View>
@@ -118,6 +118,8 @@ export function MaintenanceHistoryScreen({ route }: Props) {
             mileage={entry.mileage}
             date={entry.date}
             notes={entry.notes}
+            costAmount={entry.costAmount}
+            currencySymbol={data.currencySymbol}
             unit={data.unit}
             onDelete={() => handleDeleteLog(entry.id, entry)}
             readOnly={!isOwnLog(entry)}

@@ -13,6 +13,7 @@ export function SignInGateModal({ visible, onSignIn, onCancel }: Props) {
     <Modal
       visible={visible}
       transparent
+      statusBarTranslucent
       animationType="fade"
       onRequestClose={onCancel}
     >

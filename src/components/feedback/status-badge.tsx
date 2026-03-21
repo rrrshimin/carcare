@@ -12,12 +12,12 @@ type StatusBadgeProps = {
 // Hex values must be static strings (NativeWind doesn't support dynamic interpolation).
 // neutral = no data yet (gray). normal = healthy (white). warning = due soon (amber). overdue = past due (red).
 const variantStyles: Record<MaintenanceStatusVariant, string> = {
-  neutral: 'rounded-md  py-1 text-xs text-[#A3ACBF]',
-  normal: 'rounded-md  text-xs font-semibold text-white',
+  neutral: 'rounded-md  py-1 text-[13px] text-[#A3ACBF]',
+  normal: 'rounded-md  text-[12px] font-regular text-white',
   warning:
-    'rounded-md border border-[#FFB020]/30 bg-[#FFB020]/10 px-2 py-1 text-xs font-semibold text-[#FFB020]',
+    'rounded-md border border-[#FFB020]/30 bg-[#FFB020]/10 px-2 py-1 text-[12px] font-semibold text-[#FFB020]',
   overdue:
-    'rounded-md border border-[#FF4D4D]/30 bg-[#FF4D4D]/10 px-2 py-1 text-xs font-semibold text-[#FF4D4D]',
+    'rounded-md border border-[#FF4D4D]/30 bg-[#FF4D4D]/10 px-2 py-1 text-[12px] font-semibold text-[#FF4D4D]',
 };
 
 // ── StatusBadge ──────────────────────────────────────────────────────

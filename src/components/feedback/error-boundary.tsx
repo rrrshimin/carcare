@@ -4,25 +4,24 @@ import { Text, View } from 'react-native';
 import { PrimaryButton } from '@/components/buttons/primary-button';
 
 type Props = { children: ReactNode };
-type State = { hasError: boolean };
+type State = { hasError: boolean; remountKey: number };
 
-// ── Global error boundary (wraps entire app in App.tsx) ──────────────
-// Fallback UI: centered error message + Restart button on dark background.
-// Same visual layout as EmptyState/ErrorState for consistency.
 export class ErrorBoundary extends Component<Props, State> {
-  state: State = { hasError: false };
+  state: State = { hasError: false, remountKey: 0 };
 
-  static getDerivedStateFromError(): State {
+  static getDerivedStateFromError(): Partial<State> {
     return { hasError: true };
   }
 
   componentDidCatch(error: Error, info: ErrorInfo) {
-    // Future: send to crash-reporting service
     console.error('ErrorBoundary caught:', error, info.componentStack);
   }
 
   private handleRestart = () => {
-    this.setState({ hasError: false });
+    this.setState((prev) => ({
+      hasError: false,
+      remountKey: prev.remountKey + 1,
+    }));
   };
 
   render() {
@@ -44,6 +43,6 @@ export class ErrorBoundary extends Component<Props, State> {
       );
     }
 
-    return this.props.children;
+    return <View key={this.state.remountKey} style={{ flex: 1 }}>{this.props.children}</View>;
   }
 }

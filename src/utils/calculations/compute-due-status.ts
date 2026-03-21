@@ -31,7 +31,9 @@ export function computeDueStatus(
   if (!latestLog) return null;
 
   const effectiveDue = getEffectiveDueInterval(logType, fuelType);
-  if (effectiveDue <= 0) return null;
+  if (effectiveDue <= 0) {
+    return { status: { variant: 'normal', label: '' }, remaining: 0 };
+  }
 
   if (logType.due_type === 'time') {
     if (!latestLog.change_date) return null;

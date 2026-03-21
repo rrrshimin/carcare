@@ -12,6 +12,7 @@ export type HistoryLogEntry = {
   mileage: number | null;
   date: string | null;
   notes: string | null;
+  costAmount: number | null;
   createdByAuthId: string | null;
 };
 
@@ -21,6 +22,7 @@ export type MaintenanceHistoryViewModel = {
   specLabel: string;
   dueStatus: MaintenanceItemStatus;
   unit: string;
+  currencySymbol: string;
   categoryIconUrl: string | null;
   entries: HistoryLogEntry[];
 };
@@ -35,6 +37,7 @@ export function getMaintenanceHistory(
   fuelType: string | null,
   unit: string,
   categoryIconUrl: string | null = null,
+  currencySymbol: string = '$',
 ): MaintenanceHistoryViewModel {
   const logTypeName = logType.log_type_name ?? 'Unknown';
   const specLabel = logType.spec_name ?? 'Specification';
@@ -45,6 +48,7 @@ export function getMaintenanceHistory(
     mileage: log.odo_log,
     date: log.change_date,
     notes: log.notes,
+    costAmount: log.cost_amount ?? null,
     createdByAuthId: log.created_by_auth_id ?? null,
   }));
 
@@ -58,6 +62,7 @@ export function getMaintenanceHistory(
     specLabel,
     dueStatus: result?.status ?? NEUTRAL_STATUS,
     unit,
+    currencySymbol,
     categoryIconUrl,
     entries,
   };

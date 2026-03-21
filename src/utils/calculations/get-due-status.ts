@@ -1,5 +1,6 @@
 import { WARNING_DAYS, WARNING_DISTANCE } from '@/constants/maintenance-thresholds';
 import type { MaintenanceItemStatus } from '@/types/maintenance';
+import { formatDisplayDistance } from '@/utils/formatting/format-mileage';
 
 export type DueCalculation = {
   status: MaintenanceItemStatus;
@@ -23,7 +24,7 @@ export function getMileageDueStatus(
     return {
       status: {
         variant: 'overdue',
-        label: `Overdue by ${fmt(Math.abs(remaining))} ${unit}`,
+        label: `Overdue by ${formatDisplayDistance(remaining)} ${unit}`,
       },
       remaining,
     };
@@ -33,7 +34,7 @@ export function getMileageDueStatus(
     return {
       status: {
         variant: 'warning',
-        label: `Change in ${fmt(remaining)} ${unit}`,
+        label: `Change in ${formatDisplayDistance(remaining)} ${unit}`,
       },
       remaining,
     };
@@ -42,7 +43,7 @@ export function getMileageDueStatus(
   return {
     status: {
       variant: 'normal',
-      label: `Change in ${fmt(remaining)} ${unit}`,
+      label: `Change in ${formatDisplayDistance(remaining)} ${unit}`,
     },
     remaining,
   };
@@ -95,10 +96,6 @@ export function getTimeDueStatus(
     },
     remaining,
   };
-}
-
-function fmt(value: number): string {
-  return Math.abs(value).toLocaleString();
 }
 
 /** Parses a YYYY-MM-DD string as local midnight, avoiding UTC shift from `new Date(string)`. */

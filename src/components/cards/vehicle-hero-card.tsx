@@ -1,8 +1,7 @@
 import { Dimensions, Image, Pressable, Text, View } from 'react-native';
 
-import { OutlineButton } from '@/components/buttons/outline-button';
 import { ContentCard } from '@/components/cards/content-card';
-import { ThreeDotsIcon } from '@/components/icons/app-icons';
+import { ChevronDownIcon } from '@/components/icons/app-icons';
 import { Vehicle } from '@/types/vehicle';
 
 type VehicleHeroCardProps = {
@@ -37,7 +36,7 @@ export function VehicleHeroCard({ vehicle, onPressShare, onPressOptions }: Vehic
         </View>
       )}
 
-      <ContentCard className="mx-4 items-center" style={{ marginTop: -IMAGE_OVERLAP }}>
+      <ContentCard className="mx-4 py-5 items-center" style={{ marginTop: -IMAGE_OVERLAP }}>
         <Text className="text-center text-[28px] font-extrabold leading-tight text-white">
           {vehicle.name}
         </Text>
@@ -48,24 +47,34 @@ export function VehicleHeroCard({ vehicle, onPressShare, onPressOptions }: Vehic
 
         <View className="mt-4 w-full flex-row items-center gap-3">
           {onPressShare ? (
-            <View className="flex-1">
-              <OutlineButton
-                className="items-center justify-center w-full bg-[#0C111F] px-8"
-                textClassName="text-center text-white"
-                label="Share"
-                onPress={onPressShare}
-              />
-            </View>
+            <Pressable
+              onPress={onPressShare}
+              className="min-h-12 flex-1 flex-row items-center justify-center rounded-xl border border-[#1F2740] px-4 py-3"
+              style={({ pressed }) => ({ opacity: pressed ? 0.85 : 1 })}
+            >
+              <Text
+                className="text-sm text-white"
+                style={{ fontFamily: 'Poppins-SemiBold' }}
+              >
+                Share
+              </Text>
+            </Pressable>
           ) : (
             <View className="flex-1" />
           )}
           {onPressOptions ? (
             <Pressable
               onPress={onPressOptions}
-              className="h-11 w-11 items-center justify-center rounded-xl border border-[#1F2740]"
+              className="min-h-12 flex-1 flex-row items-center justify-center gap-2 rounded-xl border border-[#1F2740] px-4 py-3"
               style={({ pressed }) => ({ opacity: pressed ? 0.85 : 1 })}
             >
-              <ThreeDotsIcon size={15} />
+              <Text
+                className="text-sm text-white"
+                style={{ fontFamily: 'Poppins-SemiBold' }}
+              >
+                Actions
+              </Text>
+              <ChevronDownIcon size={14} color="#FFFFFF" />
             </Pressable>
           ) : null}
         </View>

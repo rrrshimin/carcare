@@ -3,6 +3,7 @@ import type { MaintenanceItemStatus } from '@/types/maintenance';
 import { computeDueStatus, NEUTRAL_STATUS } from '@/utils/calculations/compute-due-status';
 import { getLatestLog } from '@/utils/calculations/get-latest-log';
 import { sortMaintenanceItemsByPriority } from '@/utils/calculations/sort-maintenance-items';
+import { isLogTypeApplicableToVehicle } from '@/utils/log-type-filter';
 
 // ── View-model types consumed by the Home screen ────────────────────
 
@@ -31,13 +32,16 @@ export type MaintenanceSummary = MaintenanceSummaryCategory[];
 export function getMaintenanceSummary(data: VehicleScreenData): MaintenanceSummary {
   const { vehicle, device, categories, logTypes, userLogs } = data;
   const fuelType = vehicle.fuel_type;
+  const transmission = vehicle.transmission;
   const currentOdometer = vehicle.current_odometer ?? 0;
   const unit = device.unit ?? 'km';
 
   return categories
     .map((category) => {
       const typesInCategory = logTypes.filter(
-        (lt) => lt.category_link === category.id,
+        (lt) =>
+          lt.category_link === category.id &&
+          isLogTypeApplicableToVehicle(lt, fuelType, transmission),
       );
 
       const items: MaintenanceSummaryItem[] = typesInCategory.map((logType) => {

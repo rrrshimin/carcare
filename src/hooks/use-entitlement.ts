@@ -3,7 +3,7 @@ import { useCallback, useMemo } from 'react';
 import { getDeviceByDeviceId } from '@/services/api/device-api';
 import { canAddVehicle, normalizePlan } from '@/services/entitlement-service';
 import { getDeviceId } from '@/services/storage-service';
-import { getEntitlementStore, setPlan } from '@/store/entitlement-store';
+import { useEntitlementStore, setPlan } from '@/store/entitlement-store';
 import { getVehicleStore } from '@/store/vehicle-store';
 import type { SubscriptionPlan } from '@/types/entitlement';
 
@@ -25,11 +25,11 @@ export async function loadEntitlement(): Promise<SubscriptionPlan> {
 }
 
 /**
- * Reads the current entitlement synchronously from the in-memory store
- * and derives whether the user can add another car.
+ * Reads the current entitlement reactively from the store and derives
+ * whether the user can add another car.
  */
 export function useEntitlement() {
-  const plan = getEntitlementStore().plan;
+  const { plan } = useEntitlementStore();
   const vehicleCount = getVehicleStore().vehicleCount;
 
   const canAddCar = useMemo(

@@ -8,6 +8,7 @@ export type CreateLogInput = {
   changeDate: string;
   specs: string;
   notes: string;
+  costAmount?: number | null;
 };
 
 export type CreateLogValidationError = {
@@ -60,6 +61,7 @@ export async function submitLog(input: CreateLogInput): Promise<UserLogRow> {
       change_date: input.changeDate,
       specs: input.specs.trim() || null,
       notes: input.notes.trim() || null,
+      cost_amount: input.costAmount ?? null,
     },
     deviceId ?? undefined,
   );

@@ -38,7 +38,7 @@ export function LabeledMultilineInput({
         maxLength={maxLength}
       />
       {error ? (
-        <Text className="text-xs text-red-400">{error}</Text>
+        <Text className="text-[13px] text-red-400">{error}</Text>
       ) : null}
     </View>
   );

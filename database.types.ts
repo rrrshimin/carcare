@@ -1,6 +1,3 @@
-Need to install the following packages:
-supabase@2.81.3
-Ok to proceed? (y) 
 export type Json =
   | string
   | number
@@ -37,6 +34,8 @@ export type Database = {
       }
       log_types: {
         Row: {
+          applicable_fuel_types: string[] | null
+          applicable_transmissions: string[] | null
           base_due: number | null
           category_link: number | null
           diesel_increment: number | null
@@ -48,6 +47,8 @@ export type Database = {
           spec_placeholder: string | null
         }
         Insert: {
+          applicable_fuel_types?: string[] | null
+          applicable_transmissions?: string[] | null
           base_due?: number | null
           category_link?: number | null
           diesel_increment?: number | null
@@ -59,6 +60,8 @@ export type Database = {
           spec_placeholder?: string | null
         }
         Update: {
+          applicable_fuel_types?: string[] | null
+          applicable_transmissions?: string[] | null
           base_due?: number | null
           category_link?: number | null
           diesel_increment?: number | null
@@ -120,6 +123,7 @@ export type Database = {
       user_devices: {
         Row: {
           created_at: string
+          currency_code: string | null
           device_id: string | null
           id: number
           subscription_status: string
@@ -127,6 +131,7 @@ export type Database = {
         }
         Insert: {
           created_at?: string
+          currency_code?: string | null
           device_id?: string | null
           id?: number
           subscription_status?: string
@@ -134,6 +139,7 @@ export type Database = {
         }
         Update: {
           created_at?: string
+          currency_code?: string | null
           device_id?: string | null
           id?: number
           subscription_status?: string
@@ -145,6 +151,7 @@ export type Database = {
         Row: {
           car_id: number | null
           change_date: string | null
+          cost_amount: number | null
           created_at: string
           created_by_auth_id: string | null
           id: number
@@ -156,6 +163,7 @@ export type Database = {
         Insert: {
           car_id?: number | null
           change_date?: string | null
+          cost_amount?: number | null
           created_at?: string
           created_by_auth_id?: string | null
           id?: number
@@ -167,6 +175,7 @@ export type Database = {
         Update: {
           car_id?: number | null
           change_date?: string | null
+          cost_amount?: number | null
           created_at?: string
           created_by_auth_id?: string | null
           id?: number
@@ -305,6 +314,7 @@ export type Database = {
         Args: {
           p_car_id: number
           p_change_date?: string
+          p_cost_amount?: number
           p_device_id: string
           p_log_type: number
           p_notes?: string
@@ -314,6 +324,7 @@ export type Database = {
         Returns: {
           car_id: number | null
           change_date: string | null
+          cost_amount: number | null
           created_at: string
           created_by_auth_id: string | null
           id: number
@@ -393,6 +404,7 @@ export type Database = {
         Returns: {
           car_id: number | null
           change_date: string | null
+          cost_amount: number | null
           created_at: string
           created_by_auth_id: string | null
           id: number
@@ -417,6 +429,7 @@ export type Database = {
         Returns: {
           car_id: number | null
           change_date: string | null
+          cost_amount: number | null
           created_at: string
           created_by_auth_id: string | null
           id: number
@@ -577,6 +590,10 @@ export type Database = {
       }
       update_device_subscription: {
         Args: { p_device_id: string; p_status: string }
+        Returns: undefined
+      }
+      update_device_currency: {
+        Args: { p_device_id: string; p_currency_code: string }
         Returns: undefined
       }
       update_device_unit: {

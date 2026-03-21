@@ -1,5 +1,5 @@
 import { useCallback, useState } from 'react';
-import { ActivityIndicator, Alert, ScrollView, Text, View } from 'react-native';
+import { ActivityIndicator, Alert, ScrollView, Text, TextInput, View } from 'react-native';
 import { useFocusEffect } from '@react-navigation/native';
 import { NativeStackScreenProps } from '@react-navigation/native-stack';
 
@@ -18,6 +18,8 @@ import {
   type CreateLogInput,
   type CreateLogValidationError,
 } from '@/services/log-service';
+import { getCurrencySymbol, DEFAULT_CURRENCY_CODE } from '@/services/currency-service';
+import { loadCachedCurrencyCode } from '@/hooks/use-currency';
 import { AppStackParamList } from '@/types/navigation';
 
 type Props = NativeStackScreenProps<AppStackParamList, typeof routes.addLog>;
@@ -42,6 +44,7 @@ export function AddLogScreen({ navigation, route }: Props) {
   const [currentOdometer, setCurrentOdometer] = useState<number>(0);
   const [fuelType, setFuelType] = useState<string | null>(null);
   const [unit, setUnit] = useState<string>('km');
+  const [currencyCode, setCurrencyCode] = useState<string>(DEFAULT_CURRENCY_CODE);
   const [initLoading, setInitLoading] = useState(true);
   const [initError, setInitError] = useState<string | null>(null);
 
@@ -55,10 +58,11 @@ export function AddLogScreen({ navigation, route }: Props) {
           setInitError(null);
 
           const deviceId = await getDeviceId();
-          const [lt, vehicle, device] = await Promise.all([
+          const [lt, vehicle, device, cachedCurrency] = await Promise.all([
             getLogTypeById(logTypeId),
             getActiveVehicle(),
             deviceId ? getDeviceByDeviceId(deviceId) : null,
+            loadCachedCurrencyCode(),
           ]);
 
           if (cancelled) return;
@@ -77,6 +81,7 @@ export function AddLogScreen({ navigation, route }: Props) {
           setCurrentOdometer(vehicle.current_odometer ?? 0);
           setFuelType(vehicle.fuel_type);
           setUnit(device?.unit ?? 'km');
+          setCurrencyCode(device?.currency_code ?? cachedCurrency);
         } catch (e) {
           if (!cancelled) {
             setInitError(
@@ -97,6 +102,7 @@ export function AddLogScreen({ navigation, route }: Props) {
   const [mileage, setMileage] = useState('');
   const [date, setDate] = useState<Date | null>(null);
   const [specification, setSpecification] = useState('');
+  const [cost, setCost] = useState('');
   const [notes, setNotes] = useState('');
 
   const [saving, setSaving] = useState(false);
@@ -111,6 +117,9 @@ export function AddLogScreen({ navigation, route }: Props) {
   async function handleSave() {
     if (vehicleId === null) return;
 
+    const rawCost = cost.trim().replace(/,/g, '');
+    const parsedCost = rawCost ? parseFloat(rawCost) : null;
+
     const input: CreateLogInput = {
       carId: vehicleId,
       logTypeId,
@@ -118,6 +127,7 @@ export function AddLogScreen({ navigation, route }: Props) {
       changeDate: date ? toISODate(date) : '',
       specs: specification,
       notes,
+      costAmount: parsedCost !== null && !isNaN(parsedCost) ? parsedCost : null,
     };
 
     const error = validateLogInput(input, {
@@ -133,7 +143,7 @@ export function AddLogScreen({ navigation, route }: Props) {
     try {
       setSaving(true);
       await addMaintenanceLog(input, logType!, fuelType);
-      navigation.pop(2);
+      navigation.navigate(routes.vehicle);
     } catch (e) {
       Alert.alert(
         'Save Failed',
@@ -200,13 +210,36 @@ export function AddLogScreen({ navigation, route }: Props) {
         error={validationError?.field === 'date' ? validationError.message : null}
       />
 
-      <LabeledTextInput
-        label={specLabel}
-        value={specification}
-        onChangeText={setSpecification}
-        placeholder={specPlaceholder || specLabel}
-        maxLength={70}
-      />
+      {/* Spec + Cost row */}
+      <View className="flex-row gap-3">
+        <View className="flex-[2]">
+          <LabeledTextInput
+            label={specLabel}
+            value={specification}
+            onChangeText={setSpecification}
+            placeholder={specPlaceholder || specLabel}
+            maxLength={70}
+          />
+        </View>
+        <View className="flex-1 gap-2">
+          <Text className="text-sm text-[#A3ACBF]">Cost</Text>
+          <View className="min-h-12 flex-row items-center rounded-xl border border-[#1F2740] bg-[#141A2B]">
+            <Text className="pl-3 text-sm text-[#A3ACBF]">
+              {getCurrencySymbol(currencyCode)}
+            </Text>
+            <TextInput
+              className="flex-1 px-2 py-3 text-sm text-white"
+              placeholder="0"
+              placeholderTextColor="#A3ACBF"
+              keyboardType="decimal-pad"
+              value={cost}
+              onChangeText={setCost}
+              selectionColor="#367DFF"
+              maxLength={12}
+            />
+          </View>
+        </View>
+      </View>
 
       <LabeledMultilineInput
         label="Notes"

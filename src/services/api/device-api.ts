@@ -40,6 +40,18 @@ export async function updateDeviceUnit(
   if (error) throw new Error(error.message);
 }
 
+export async function updateDeviceCurrency(
+  deviceId: string,
+  currencyCode: string,
+): Promise<void> {
+  const { error } = await supabase.rpc('update_device_currency', {
+    p_device_id: deviceId,
+    p_currency_code: currencyCode,
+  });
+
+  if (error) throw new Error(error.message);
+}
+
 /**
  * Updates the subscription_status on the device record.
  * STUB: In production this would be set by a server-side webhook

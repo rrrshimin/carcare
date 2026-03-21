@@ -1,8 +1,9 @@
-import { useEffect, useRef } from 'react';
-import { Image, View } from 'react-native';
+import { useCallback, useEffect, useRef, useState } from 'react';
+import { Image, Text, View } from 'react-native';
 import { CommonActions } from '@react-navigation/native';
 import { NativeStackScreenProps } from '@react-navigation/native-stack';
 
+import { PrimaryButton } from '@/components/buttons/primary-button';
 import { useAppBootstrap } from '@/hooks/use-app-bootstrap';
 import { routes } from '@/navigation/routes';
 import { resolveLaunchRoute } from '@/services/launch-routing-service';
@@ -11,18 +12,18 @@ import { SetupFlowStackParamList } from '@/types/navigation';
 type Props = NativeStackScreenProps<SetupFlowStackParamList, typeof routes.splash>;
 
 export function SplashScreen({ navigation }: Props) {
+  const [attempt, setAttempt] = useState(0);
   const { isReady, onboardingCompleted, vehicleExists, vehicleCount, error } =
-    useAppBootstrap();
+    useAppBootstrap(attempt);
   const hasNavigated = useRef(false);
 
-  useEffect(() => {
-    if (!isReady || hasNavigated.current) return;
+  const handleRetry = useCallback(() => {
+    hasNavigated.current = false;
+    setAttempt((n) => n + 1);
+  }, []);
 
-    if (error) {
-      navigation.replace(routes.onboarding);
-      hasNavigated.current = true;
-      return;
-    }
+  useEffect(() => {
+    if (!isReady || hasNavigated.current || error) return;
 
     const target = resolveLaunchRoute({ onboardingCompleted, vehicleExists });
 
@@ -65,11 +66,26 @@ export function SplashScreen({ navigation }: Props) {
     hasNavigated.current = true;
   }, [isReady, onboardingCompleted, vehicleExists, vehicleCount, error, navigation]);
 
-  // ── Splash visual ────────────────────────────────────────────────────
-  // Full-screen dark background with centered logo. Logo asset: assets/splash-icon.png.
-  // Logo size: h-24 (96px) × w-48 (192px). Change these to resize the splash logo.
+  if (error) {
+    return (
+      <View className="flex-1 items-center justify-center bg-[#0A0C14] px-6">
+        <Image
+          source={require('../../../assets/splash-icon.png')}
+          resizeMode="contain"
+          className="h-24 w-48"
+        />
+        <Text className="mt-6 text-center text-sm text-[#A3ACBF]">
+          Could not connect. Check your internet and try again.
+        </Text>
+        <View className="mt-4 w-full">
+          <PrimaryButton label="Retry" onPress={handleRetry} />
+        </View>
+      </View>
+    );
+  }
+
   return (
-    <View className="flex-1 items-center justify-center bg-[#0C111F]">
+    <View className="flex-1 items-center justify-center bg-[#0A0C14]">
       <Image
         source={require('../../../assets/splash-icon.png')}
         resizeMode="contain"

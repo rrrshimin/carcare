@@ -34,8 +34,8 @@ export function OptionPillGroup<T extends string>({
               key={option}
               className={
                 isSelected
-                  ? 'min-h-10 justify-center rounded-xl bg-[#0051E8] px-4 py-2'
-                  : 'min-h-10 justify-center rounded-xl border border-[#1F2740] bg-[#141A2B] px-4 py-2'
+                  ? 'min-h-11 justify-center rounded-xl bg-[#0051E8] px-4 py-2'
+                  : 'min-h-11 justify-center rounded-xl border border-[#1F2740] bg-[#141A2B] px-4 py-2'
               }
               onPress={() => onSelect(option)}
               style={({ pressed }) => ({ opacity: pressed ? 0.85 : undefined })}

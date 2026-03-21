@@ -11,11 +11,12 @@ import {
   type LogTypeRow as LogTypeRecord,
 } from '@/services/api/log-type-api';
 import { AppStackParamList } from '@/types/navigation';
+import { isLogTypeApplicableToVehicle } from '@/utils/log-type-filter';
 
 type Props = NativeStackScreenProps<AppStackParamList, typeof routes.selectLogType>;
 
 export function SelectLogTypeScreen({ navigation, route }: Props) {
-  const { categoryId, categoryName } = route.params;
+  const { categoryId, categoryName, vehicleFuelType, vehicleTransmission } = route.params;
   const [logTypes, setLogTypes] = useState<LogTypeRecord[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -28,7 +29,12 @@ export function SelectLogTypeScreen({ navigation, route }: Props) {
 
       getLogTypesByCategoryId(categoryId)
         .then((data) => {
-          if (!cancelled) setLogTypes(data);
+          if (!cancelled) {
+            const filtered = data.filter((lt) =>
+              isLogTypeApplicableToVehicle(lt, vehicleFuelType ?? null, vehicleTransmission ?? null),
+            );
+            setLogTypes(filtered);
+          }
         })
         .catch((e) => {
           if (!cancelled) {
@@ -44,7 +50,7 @@ export function SelectLogTypeScreen({ navigation, route }: Props) {
       return () => {
         cancelled = true;
       };
-    }, [categoryId]),
+    }, [categoryId, vehicleFuelType, vehicleTransmission]),
   );
 
   if (loading) {

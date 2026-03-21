@@ -189,7 +189,7 @@ export function TransferScreen({ route, navigation }: Props) {
 
           <View className="mt-4 rounded-xl bg-[#0C111F] p-3">
             <Text
-              className="text-xs text-[#A3ACBF]"
+              className="text-[13px] text-[#A3ACBF]"
               style={{ fontFamily: 'Poppins' }}
             >
               After the recipient accepts, this vehicle and all its logs will

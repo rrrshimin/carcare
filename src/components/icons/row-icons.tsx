@@ -1,4 +1,4 @@
-import Svg, { Path } from 'react-native-svg';
+import Svg, { Circle, Path } from 'react-native-svg';
 
 type IconProps = {
   size?: number;
@@ -21,6 +21,26 @@ export function CalendarIcon({ size = 14, color = '#A3ACBF' }: IconProps) {
         strokeWidth={2}
         strokeLinecap="round"
         strokeLinejoin="round"
+      />
+    </Svg>
+  );
+}
+
+export function CostIcon({ size = 14, color = '#A3ACBF' }: IconProps) {
+  return (
+    <Svg width={size} height={size} viewBox="0 0 24 24" fill="none">
+      <Circle cx="12" cy="12" r="9" stroke={color} strokeWidth={1.8} />
+      <Path
+        d="M14.5 9.5C14 9 13.1 8.5 12 8.5c-1.8 0-2.5 1-2.5 2 0 2.8 5 1.8 5 4.5 0 1.5-1.3 2-2.5 2s-2.2-.6-2.5-1.5"
+        stroke={color}
+        strokeWidth={1.8}
+        strokeLinecap="round"
+      />
+      <Path
+        d="M12 7v1.5M12 15.5V17"
+        stroke={color}
+        strokeWidth={1.8}
+        strokeLinecap="round"
       />
     </Svg>
   );

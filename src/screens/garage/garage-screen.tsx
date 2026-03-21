@@ -4,12 +4,13 @@ import { CommonActions, useFocusEffect } from '@react-navigation/native';
 import type { NativeStackScreenProps } from '@react-navigation/native-stack';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
+import { OutlineButton } from '@/components/buttons/outline-button';
 import { PrimaryButton } from '@/components/buttons/primary-button';
 import { TransferRequestCard } from '@/components/cards/transfer-request-card';
 import { SignInGateModal } from '@/components/feedback/sign-in-gate-modal';
 import { LoadingState } from '@/components/feedback/loading-state';
 import { ErrorState } from '@/components/feedback/error-state';
-import { AccountIcon, ChevronRightIcon, DangerIcon, SubscriptionStarIcon } from '@/components/icons/app-icons';
+import { AccountIcon, ChevronRightIcon, CrownIcon, DangerIcon, SubscriptionStarIcon } from '@/components/icons/app-icons';
 import { useAuth } from '@/context/auth-context';
 import { useEntitlement, loadEntitlement } from '@/hooks/use-entitlement';
 import { useTransferRequests } from '@/hooks/use-transfer-requests';
@@ -57,7 +58,7 @@ function ExpandGarageCard({ onPress }: { onPress: () => void }) {
             Expand Your Garage
           </Text>
           <Text
-            className="mt-1 text-xs text-[#A3ACBF]"
+            className="mt-1 text-[13px] text-[#A3ACBF]"
             style={{ fontFamily: 'Poppins' }}
             numberOfLines={2}
           >
@@ -77,10 +78,12 @@ function ExpandGarageCard({ onPress }: { onPress: () => void }) {
 function VehicleCard({
   vehicle,
   dangerCount,
+  unit,
   onPress,
 }: {
   vehicle: VehicleRow;
   dangerCount: number;
+  unit: string;
   onPress: () => void;
 }) {
   return (
@@ -103,7 +106,7 @@ function VehicleCard({
         <View className="flex-row items-center justify-between px-4 py-4">
           <View className="flex-1">
             <Text
-              className="text-base text-white"
+              className="text-base text-white text-[16px]"
               style={{ fontFamily: 'Poppins-Bold' }}
               numberOfLines={1}
             >
@@ -111,11 +114,11 @@ function VehicleCard({
               {vehicle.year ? `, ${vehicle.year}` : ''}
             </Text>
             <Text
-              className="mt-1.5 text-xs text-[#A3ACBF]"
+              className="mt-1.5 text-[12px] text-[#A3ACBF]"
               style={{ fontFamily: 'Poppins' }}
               numberOfLines={1}
             >
-              {(vehicle.current_odometer ?? 0).toLocaleString()} km
+              {(vehicle.current_odometer ?? 0).toLocaleString()} {unit}
               {' \u2022 '}
               {capitalize(vehicle.fuel_type ?? 'petrol')}
               {' \u2022 '}
@@ -127,7 +130,7 @@ function VehicleCard({
             {vehicle.is_active === false ? (
               <View className="rounded-full bg-[#1A2240] px-2.5 py-1">
                 <Text
-                  className="text-xs text-[#6B7490]"
+                  className="text-[12px] text-[#6B7490]"
                   style={{ fontFamily: 'Poppins-SemiBold' }}
                 >
                   Inactive
@@ -137,7 +140,7 @@ function VehicleCard({
               <View className="flex-row items-center gap-1 rounded-full bg-[#FF8126]/15 px-2.5 py-1">
                 <DangerIcon size={14} />
                 <Text
-                  className="text-xs text-[#FF8126]"
+                  className="text-[12px] text-[#FF8126]"
                   style={{ fontFamily: 'Poppins-SemiBold' }}
                 >
                   {dangerCount}
@@ -160,8 +163,11 @@ export function GarageScreen({ navigation }: Props) {
   const { plan } = useEntitlement();
   const { requests: transferRequests, refresh: refreshTransfers } = useTransferRequests(isAuthenticated);
   const [vehiclesWithDanger, setVehiclesWithDanger] = useState<VehicleWithDanger[]>([]);
+  const [distanceUnit, setDistanceUnit] = useState('km');
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const hasLoadedRef = useRef(false);
+  const [retryKey, setRetryKey] = useState(0);
   const [gateVisible, setGateVisible] = useState(false);
   const [transferBusy, setTransferBusy] = useState<number | null>(null);
 
@@ -177,7 +183,7 @@ export function GarageScreen({ navigation }: Props) {
 
       async function load() {
         try {
-          setLoading(true);
+          if (!hasLoadedRef.current) setLoading(true);
           setError(null);
           const result = await getAllVehicles();
           if (cancelled) return;
@@ -213,6 +219,7 @@ export function GarageScreen({ navigation }: Props) {
           if (cancelled) return;
 
           const unit = device?.unit ?? 'km';
+          setDistanceUnit(unit);
           const withDanger: VehicleWithDanger[] = result.map((v) => ({
             vehicle: v,
             dangerCount: getVehicleDangerCount(
@@ -224,6 +231,7 @@ export function GarageScreen({ navigation }: Props) {
           }));
 
           setVehiclesWithDanger(withDanger);
+          hasLoadedRef.current = true;
 
           if (pendingAddCar.current) {
             pendingAddCar.current = false;
@@ -247,7 +255,8 @@ export function GarageScreen({ navigation }: Props) {
 
       load();
       return () => { cancelled = true; };
-    }, [isAuthenticated]),
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [isAuthenticated, retryKey]),
   );
 
   function navigateToAddVehicle() {
@@ -270,18 +279,20 @@ export function GarageScreen({ navigation }: Props) {
   }
 
   function handleAddAnotherCar() {
+    const currentPlan = getEntitlementStore().plan;
+    const vehicleCount = vehiclesWithDanger.length;
+
+    if (!canAddVehicle(currentPlan, vehicleCount)) {
+      navigation.navigate(routes.paywall);
+      return;
+    }
+
     if (isGuest) {
       setGateVisible(true);
       return;
     }
 
-    const currentPlan = getEntitlementStore().plan;
-    const vehicleCount = vehiclesWithDanger.length;
-    if (canAddVehicle(currentPlan, vehicleCount)) {
-      navigateToAddVehicle();
-    } else {
-      navigation.navigate(routes.paywall);
-    }
+    navigateToAddVehicle();
   }
 
   function handleGateSignIn() {
@@ -329,10 +340,21 @@ export function GarageScreen({ navigation }: Props) {
     );
   }
 
-  if (loading) return <LoadingState />;
-  if (error) return <ErrorState message={error} />;
+  if (loading && vehiclesWithDanger.length === 0) return <LoadingState />;
+  if (error && vehiclesWithDanger.length === 0) {
+    return (
+      <ErrorState
+        message={error}
+        onRetry={() => {
+          hasLoadedRef.current = false;
+          setRetryKey((k) => k + 1);
+        }}
+      />
+    );
+  }
 
   const showUpgradeCard = plan === 'free';
+  const needsUpgradeToAdd = !canAddVehicle(plan, vehiclesWithDanger.length);
 
   return (
     <View className="flex-1 bg-[#0C111F]">
@@ -377,19 +399,22 @@ export function GarageScreen({ navigation }: Props) {
           </Pressable>
         </View>
 
-        {/* New car button (hidden for free users) */}
-        {!showUpgradeCard ? (
-          <View className="mt-5">
-            <PrimaryButton label="New car" onPress={handleAddAnotherCar} />
-          </View>
-        ) : null}
-
-        {/* Upgrade card for free users */}
-        {showUpgradeCard ? (
-          <View className="mt-4">
-            <ExpandGarageCard onPress={() => navigation.navigate(routes.paywall)} />
-          </View>
-        ) : null}
+        {/* New car button — secondary with crown for free plan */}
+        <View className="mt-4">
+          {plan === 'free' ? (
+            <OutlineButton
+              label="New car"
+              onPress={handleAddAnotherCar}
+              icon={<CrownIcon size={18} color="#FFCE1E" />}
+            />
+          ) : (
+            <PrimaryButton
+              label="New car"
+              onPress={handleAddAnotherCar}
+              icon={needsUpgradeToAdd ? <CrownIcon size={18} /> : undefined}
+            />
+          )}
+        </View>
 
         {/* Incoming transfer requests */}
         {transferRequests.length > 0 ? (
@@ -419,10 +444,18 @@ export function GarageScreen({ navigation }: Props) {
               key={vehicle.id}
               vehicle={vehicle}
               dangerCount={dangerCount}
+              unit={distanceUnit}
               onPress={() => handleSelectVehicle(vehicle)}
             />
           ))}
         </View>
+
+        {/* Subscription prompt for all free-plan users (guest or logged-in) */}
+        {showUpgradeCard ? (
+          <View className="mt-4">
+            <ExpandGarageCard onPress={() => navigation.navigate(routes.paywall)} />
+          </View>
+        ) : null}
       </ScrollView>
     </View>
   );

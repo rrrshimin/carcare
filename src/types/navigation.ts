@@ -14,6 +14,8 @@ export type AppStackParamList = {
   [routes.selectLogType]: {
     categoryId: number;
     categoryName: string;
+    vehicleFuelType: string | null;
+    vehicleTransmission: string | null;
   };
   [routes.addLog]: {
     logTypeId: number;
@@ -26,6 +28,7 @@ export type AppStackParamList = {
   [routes.updateMileage]: undefined;
   [routes.editVehicle]: { vehicleId: number };
   [routes.shareLink]: undefined;
+  [routes.spending]: undefined;
   [routes.paywall]: undefined;
   [routes.account]: undefined;
   [routes.auth]: undefined;

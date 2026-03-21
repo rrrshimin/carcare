@@ -21,9 +21,9 @@
       "package": "com.carcarediary.app",
       "adaptiveIcon": {
         "backgroundColor": "#0C111F",
-        "foregroundImage": "./assets/adroid-icon-foreground.png",
+        "foregroundImage": "./assets/android-icon-foreground.png",
         "backgroundImage": "./assets/android-icon-background.png",
-        "monochromeImage": "./assets/adroid-icon-monochrome.png"
+        "monochromeImage": "./assets/android-icon-monochrome.png"
       },
       "predictiveBackGestureEnabled": false
     },
@@ -48,7 +48,8 @@
           "iosUrlScheme": "com.googleusercontent.apps.PLACEHOLDER_IOS_CLIENT_ID"
         }
       ],
-      "expo-web-browser"
+      "expo-web-browser",
+      "expo-sharing"
     ],
     "extra": {
       "eas": {

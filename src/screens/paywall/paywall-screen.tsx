@@ -77,19 +77,14 @@ function PlanCard({
   disabled: boolean;
   onSelect: () => void;
 }) {
-  const borderColor = isCurrent
-    ? '#34D399'
-    : selected
-      ? '#34D399'
-      : '#141A2B';
+  const highlighted = isCurrent || selected;
 
   return (
     <Pressable
       onPress={onSelect}
       disabled={disabled}
-      className="rounded-2xl border-2 bg-[#141A2B] p-5"
+      className={`rounded-2xl border-2 bg-[#141A2B] p-5 ${highlighted ? 'border-[#34D399]' : 'border-[#141A2B]'}`}
       style={({ pressed }) => ({
-        borderColor,
         opacity: disabled ? 0.6 : pressed ? 0.9 : 1,
       })}
     >
@@ -120,7 +115,7 @@ function PlanCard({
             {config.price}
           </Text>
           <Text
-            className="text-xs text-[#A3ACBF]"
+            className="text-[13px] text-[#A3ACBF]"
             style={{ fontFamily: 'Poppins' }}
           >
             {config.period}
@@ -131,7 +126,7 @@ function PlanCard({
       {(config.badge || isCurrent) ? (
         <View className="mt-0 ml-8">
           <Text
-            className="text-xs"
+            className="text-[13px]"
             style={{
               fontFamily: 'Poppins-SemiBold',
               color: isCurrent ? '#34D399' : '#F2C50F',
@@ -162,7 +157,10 @@ function ProActiveContent({
 }) {
   return (
     <View>
-      <View className="rounded-2xl border-2 border-[#34D399] bg-[#141A2B] p-6">
+      <View
+        className="rounded-2xl bg-[#141A2B] p-6"
+        style={{ borderWidth: 2, borderColor: '#34D399' }}
+      >
         <Text
           className="text-center text-lg text-white"
           style={{ fontFamily: 'Poppins-Bold' }}
@@ -306,7 +304,10 @@ export function PaywallScreen({ navigation }: Props) {
         ) : (
           <>
             <View style={{ gap: 16, marginTop: 24 }}>
-              {PLANS.map((config) => (
+              {(currentPlan === 'base'
+                ? PLANS.filter((p) => p.plan === 'pro')
+                : PLANS
+              ).map((config) => (
                 <PlanCard
                   key={config.plan}
                   config={config}

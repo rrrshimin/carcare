@@ -33,7 +33,7 @@ export function LabeledTextInput({
     <View className="gap-2">
       <Text className="text-sm text-[#A3ACBF]">{label}</Text>
       <View
-        className={`min-h-11 flex-row items-center rounded-xl border bg-[#141A2B] ${
+        className={`min-h-12 flex-row items-center rounded-xl border bg-[#141A2B] ${
           error ? 'border-red-500' : 'border-[#1F2740]'
         }`}
       >
@@ -52,7 +52,7 @@ export function LabeledTextInput({
         {rightElement ?? null}
       </View>
       {error ? (
-        <Text className="text-xs text-red-400">{error}</Text>
+        <Text className="text-[13px] text-red-400">{error}</Text>
       ) : null}
     </View>
   );

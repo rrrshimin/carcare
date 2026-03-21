@@ -86,7 +86,7 @@ export async function deleteUserLog(
 export async function createUserLog(
   payload: Pick<
     TablesInsert<'user_logs'>,
-    'car_id' | 'log_type' | 'odo_log' | 'change_date' | 'specs' | 'notes'
+    'car_id' | 'log_type' | 'odo_log' | 'change_date' | 'specs' | 'notes' | 'cost_amount'
   >,
   deviceId?: string,
 ): Promise<UserLogRow> {
@@ -111,6 +111,7 @@ export async function createUserLog(
     p_change_date: payload.change_date ?? undefined,
     p_specs: payload.specs ?? undefined,
     p_notes: payload.notes ?? undefined,
+    p_cost_amount: payload.cost_amount ?? undefined,
   });
   if (error) throw new Error(error.message);
   const rows = data as UserLogRow[] | null;

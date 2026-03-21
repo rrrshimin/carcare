@@ -24,10 +24,11 @@ export function MaintenanceItemRow({ item, onPressItem, onPressAddLog }: Mainten
         <View className="flex-1">
           {/* Item name: 16px SemiBold white */}
           <Text className="text-base font-semibold text-white">{item.name}</Text>
-          {/* StatusBadge below name shows due status (normal/warning/overdue) */}
-          <View className="mt-1">
-            <StatusBadge label={item.status.label} variant={item.status.variant} />
-          </View>
+          {item.status.label ? (
+            <View className="mt-1">
+              <StatusBadge label={item.status.label} variant={item.status.variant} />
+            </View>
+          ) : null}
         </View>
 
         {onPressAddLog ? (
@@ -36,7 +37,7 @@ export function MaintenanceItemRow({ item, onPressItem, onPressAddLog }: Mainten
             onPress={() => onPressAddLog(item)}
             style={({ pressed }) => ({ opacity: pressed ? 0.85 : undefined })}
           >
-            <Text className="text-xs font-semibold text-[#367DFF]">Add Log</Text>
+            <Text className="text-[13px] font-semibold text-[#367DFF]">Add Log</Text>
           </Pressable>
         ) : null}
       </View>

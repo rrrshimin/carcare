@@ -1,4 +1,4 @@
-import { useCallback, useState } from 'react';
+import { useCallback, useRef, useState } from 'react';
 import { useFocusEffect } from '@react-navigation/native';
 
 import { getAllCategories, type LogCategoryRow } from '@/services/api/category-api';
@@ -20,13 +20,23 @@ export type VehicleScreenData = {
 type UseVehicleDataResult = {
   data: VehicleScreenData | null;
   loading: boolean;
+  refreshing: boolean;
   error: string | null;
+  retry: () => void;
 };
 
 export function useVehicleData(): UseVehicleDataResult {
   const [data, setData] = useState<VehicleScreenData | null>(null);
   const [loading, setLoading] = useState(true);
+  const [refreshing, setRefreshing] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const hasLoadedRef = useRef(false);
+  const [retryKey, setRetryKey] = useState(0);
+
+  const retry = useCallback(() => {
+    hasLoadedRef.current = false;
+    setRetryKey((k) => k + 1);
+  }, []);
 
   useFocusEffect(
     useCallback(() => {
@@ -34,7 +44,11 @@ export function useVehicleData(): UseVehicleDataResult {
 
       async function load() {
         try {
-          setLoading(true);
+          if (hasLoadedRef.current) {
+            setRefreshing(true);
+          } else {
+            setLoading(true);
+          }
           setError(null);
 
           const deviceId = await getDeviceId();
@@ -65,6 +79,7 @@ export function useVehicleData(): UseVehicleDataResult {
           if (cancelled) return;
 
           setData({ vehicle, device, categories, logTypes, userLogs });
+          hasLoadedRef.current = true;
         } catch (e) {
           if (!cancelled) {
             setError(
@@ -72,7 +87,10 @@ export function useVehicleData(): UseVehicleDataResult {
             );
           }
         } finally {
-          if (!cancelled) setLoading(false);
+          if (!cancelled) {
+            setLoading(false);
+            setRefreshing(false);
+          }
         }
       }
 
@@ -81,8 +99,9 @@ export function useVehicleData(): UseVehicleDataResult {
       return () => {
         cancelled = true;
       };
-    }, []),
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [retryKey]),
   );
 
-  return { data, loading, error };
+  return { data, loading, refreshing, error, retry };
 }

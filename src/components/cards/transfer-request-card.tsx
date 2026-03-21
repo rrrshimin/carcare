@@ -40,7 +40,7 @@ export function TransferRequestCard({
             {request.vehicleYear ? `, ${request.vehicleYear}` : ''}
           </Text>
           <Text
-            className="mt-0.5 text-xs text-[#A3ACBF]"
+            className="mt-0.5 text-[13px] text-[#A3ACBF]"
             style={{ fontFamily: 'Poppins' }}
           >
             From @{request.senderUsername}

@@ -20,7 +20,7 @@ export type BootstrapResult = {
  * vehicle existence against the backend (not just local cache).
  * Returns vehicleCount so the splash can decide between Garage and Home.
  */
-export function useAppBootstrap(): BootstrapResult {
+export function useAppBootstrap(attempt: number = 0): BootstrapResult {
   const [result, setResult] = useState<BootstrapResult>({
     isReady: false,
     deviceId: null,
@@ -32,14 +32,21 @@ export function useAppBootstrap(): BootstrapResult {
 
   useEffect(() => {
     let cancelled = false;
+    setResult({
+      isReady: false,
+      deviceId: null,
+      onboardingCompleted: false,
+      vehicleExists: false,
+      vehicleCount: 0,
+      error: null,
+    });
 
     async function bootstrap() {
       try {
-        const [deviceId, onboardingCompleted] = await Promise.all([
-          ensureDeviceIdentity(),
-          getOnboardingCompleted(),
-        ]);
+        const deviceId = await ensureDeviceIdentity();
+        if (cancelled) return;
 
+        const onboardingCompleted = await getOnboardingCompleted();
         if (cancelled) return;
 
         setAppState({ deviceId, onboardingCompleted });
@@ -73,7 +80,7 @@ export function useAppBootstrap(): BootstrapResult {
     return () => {
       cancelled = true;
     };
-  }, []);
+  }, [attempt]);
 
   return result;
 }

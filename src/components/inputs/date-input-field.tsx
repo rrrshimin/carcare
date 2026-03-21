@@ -42,7 +42,7 @@ export function DateInputField({
       {/* Pressable field: same sizing as LabeledTextInput (min-h-11, rounded-xl, card fill).
           Error state swaps border to red-500. */}
       <Pressable
-        className={`min-h-11 justify-center rounded-xl border px-4 py-3 ${
+        className={`min-h-12 justify-center rounded-xl border px-4 py-3 ${
           error ? 'border-red-500' : 'border-[#1F2740]'
         } bg-[#141A2B]`}
         onPress={() => setShowPicker(true)}
@@ -54,7 +54,7 @@ export function DateInputField({
 
       {/* Validation error text: 12px red */}
       {error ? (
-        <Text className="text-xs text-red-400">{error}</Text>
+        <Text className="text-[13px] text-red-400">{error}</Text>
       ) : null}
 
       {showPicker && (

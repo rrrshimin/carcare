@@ -28,7 +28,7 @@ export function MileageCard({ currentOdometer, unit, onPressUpdate }: MileageCar
           </View>
           <View>
             {/* Label: 12px secondary gray. Value: 18px ExtraBold white. */}
-            <Text className="text-xs text-[#A3ACBF]">Current Mileage</Text>
+            <Text className="text-[13px] text-[#A3ACBF]">Current Mileage</Text>
             <Text className="text-lg font-extrabold text-white">
               {formatMileage(currentOdometer, unit)}
             </Text>
@@ -37,7 +37,7 @@ export function MileageCard({ currentOdometer, unit, onPressUpdate }: MileageCar
 
         {onPressUpdate ? (
           <Pressable
-            className="min-h-10 items-center justify-center rounded-lg bg-[#0051E8] px-6 py-2"
+            className="min-h-11 items-center justify-center rounded-lg bg-[#0051E8] px-6 py-2"
             onPress={onPressUpdate}
             style={({ pressed }) => ({ opacity: pressed ? 0.9 : undefined })}
           >

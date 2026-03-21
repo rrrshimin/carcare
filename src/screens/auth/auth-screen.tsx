@@ -4,6 +4,7 @@ import {
   Keyboard,
   KeyboardAvoidingView,
   Platform,
+  Pressable,
   ScrollView,
   Text,
   TouchableWithoutFeedback,
@@ -13,11 +14,10 @@ import { CommonActions } from '@react-navigation/native';
 import { useNavigation } from '@react-navigation/native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
-import { PrimaryButton } from '@/components/buttons/primary-button';
-import { OutlineButton } from '@/components/buttons/outline-button';
+import { GoogleLogoIcon, AppleLogoIcon } from '@/components/icons/app-icons';
 import { ScreenTitleBlock } from '@/components/layout/screen-title-block';
 import { useAuth } from '@/context/auth-context';
-import { signInWithApple, signInWithGoogle } from '@/services/auth-service';
+import { signInWithGoogle } from '@/services/auth-service';
 import { routes } from '@/navigation/routes';
 
 export function AuthScreen() {
@@ -32,25 +32,19 @@ export function AuthScreen() {
         navigation.replace(routes.username);
       } else {
         navigation.dispatch(
-          CommonActions.reset({ index: 0, routes: [{ name: routes.appFlow }] }),
+          CommonActions.reset({
+            index: 0,
+            routes: [
+              {
+                name: routes.appFlow,
+                state: { routes: [{ name: routes.garage }] },
+              },
+            ],
+          }),
         );
       }
     }
   }, [isAuthenticated, needsUsername, navigation]);
-
-  async function handleApple() {
-    setLoading(true);
-    try {
-      await signInWithApple();
-      await refreshProfile();
-      navigation.replace(routes.username);
-    } catch (e) {
-      const msg = e instanceof Error ? e.message : 'Apple sign-in failed.';
-      Alert.alert('Sign in error', msg);
-    } finally {
-      setLoading(false);
-    }
-  }
 
   async function handleGoogle() {
     setLoading(true);
@@ -92,18 +86,35 @@ export function AuthScreen() {
           />
 
           <View className="mt-10 gap-4">
-            {Platform.OS === 'ios' && (
-              <PrimaryButton
-                label="Continue with Apple"
-                onPress={handleApple}
-                disabled={loading}
-              />
-            )}
-            <OutlineButton
-              label="Continue with Google"
+            <Pressable
               onPress={handleGoogle}
               disabled={loading}
-            />
+              className="min-h-[52px] flex-row items-center justify-center gap-3 rounded-xl bg-white px-4 py-3"
+              style={({ pressed }) => ({
+                opacity: loading ? 0.6 : pressed ? 0.85 : 1,
+              })}
+            >
+              <GoogleLogoIcon size={20} />
+              <Text
+                className="text-sm text-[#1F1F1F]"
+                style={{ fontFamily: 'Poppins-SemiBold' }}
+              >
+                Continue with Google
+              </Text>
+            </Pressable>
+
+            <Pressable
+              disabled
+              className="min-h-[52px] flex-row items-center justify-center gap-3 rounded-xl bg-white px-4 py-3 opacity-40"
+            >
+              <AppleLogoIcon size={20} color="#000000" />
+              <Text
+                className="text-sm text-[#1F1F1F]"
+                style={{ fontFamily: 'Poppins-SemiBold' }}
+              >
+                Continue with Apple
+              </Text>
+            </Pressable>
           </View>
         </ScrollView>
       </TouchableWithoutFeedback>
