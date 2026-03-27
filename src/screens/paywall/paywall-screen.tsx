@@ -4,7 +4,9 @@ import type { NativeStackScreenProps } from '@react-navigation/native-stack';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { PrimaryButton } from '@/components/buttons/primary-button';
+import { GuestProModal } from '@/components/feedback/guest-pro-modal';
 import { BackArrowIcon, CheckIcon } from '@/components/icons/app-icons';
+import { useAuth } from '@/context/auth-context';
 import { routes } from '@/navigation/routes';
 import { loadEntitlement, useEntitlement } from '@/hooks/use-entitlement';
 import { updateDeviceSubscription } from '@/services/api/device-api';
@@ -200,12 +202,14 @@ function ProActiveContent({
 export function PaywallScreen({ navigation }: Props) {
   const insets = useSafeAreaInsets();
   const { plan: currentPlan } = useEntitlement();
+  const { isGuest } = useAuth();
 
   const defaultSelection: SubscriptionPlan =
     currentPlan === 'base' ? 'pro' : 'base';
   const [selectedPlan, setSelectedPlan] =
     useState<SubscriptionPlan>(defaultSelection);
   const [purchasing, setPurchasing] = useState(false);
+  const [guestProModalVisible, setGuestProModalVisible] = useState(false);
 
   const isPro = currentPlan === 'pro';
   const isBase = currentPlan === 'base';
@@ -225,11 +229,27 @@ export function PaywallScreen({ navigation }: Props) {
       await updateDeviceSubscription(deviceId, selectedPlan);
       await loadEntitlement();
 
-      Alert.alert(
-        'Upgrade successful',
-        `You are now on the ${selectedPlan === 'pro' ? 'Pro' : 'Base'} plan.`,
-        [{ text: 'OK', onPress: () => navigation.goBack() }],
-      );
+      if (isGuest && selectedPlan === 'pro') {
+        setGuestProModalVisible(true);
+      } else if (!isGuest && selectedPlan === 'pro') {
+        Alert.alert(
+          'Upgrade successful',
+          'You are now on the Pro plan.',
+          [{
+            text: 'OK',
+            onPress: () => {
+              navigation.goBack();
+              navigation.navigate(routes.businessDetails);
+            },
+          }],
+        );
+      } else {
+        Alert.alert(
+          'Upgrade successful',
+          `You are now on the ${selectedPlan === 'pro' ? 'Pro' : 'Base'} plan.`,
+          [{ text: 'OK', onPress: () => navigation.goBack() }],
+        );
+      }
     } catch (e) {
       Alert.alert(
         'Purchase failed',
@@ -252,8 +272,25 @@ export function PaywallScreen({ navigation }: Props) {
     }
   }
 
+  function handleGuestProCreateAccount() {
+    setGuestProModalVisible(false);
+    navigation.goBack();
+    navigation.navigate(routes.auth);
+  }
+
+  function handleGuestProDismiss() {
+    setGuestProModalVisible(false);
+    navigation.goBack();
+  }
+
   return (
     <View className="flex-1 bg-[#0C111F]">
+      <GuestProModal
+        visible={guestProModalVisible}
+        onCreateAccount={handleGuestProCreateAccount}
+        onDismiss={handleGuestProDismiss}
+      />
+
       <Pressable
         onPress={() => navigation.goBack()}
         className="absolute z-10 rounded-full bg-black/40 p-2"

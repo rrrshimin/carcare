@@ -7,7 +7,10 @@ import type { NativeStackScreenProps } from '@react-navigation/native-stack';
 import { PrimaryButton } from '@/components/buttons/primary-button';
 import { OutlineButton } from '@/components/buttons/outline-button';
 import {
+  BellIcon,
+  BuildingIcon,
   ChevronRightIcon,
+  DollarIcon,
   SubscriptionStarIcon,
   SupportIcon,
   PrivacyPolicyIcon,
@@ -15,6 +18,7 @@ import {
 import { useAuth } from '@/context/auth-context';
 import { useEntitlement } from '@/hooks/use-entitlement';
 import { useCurrency } from '@/hooks/use-currency';
+import { deleteAccount } from '@/features/account/delete-account';
 import { signOut } from '@/services/auth-service';
 import { getPlanDisplayName, getPlanCarLimit } from '@/services/entitlement-service';
 import { CURRENCIES } from '@/services/currency-service';
@@ -397,6 +401,7 @@ export function AccountScreen({ navigation }: Props) {
   const { plan } = useEntitlement();
   const { currencyCode, currencySymbol, updateCurrency } = useCurrency();
   const [currencyPickerVisible, setCurrencyPickerVisible] = useState(false);
+  const [isDeleting, setIsDeleting] = useState(false);
 
   const limit = getPlanCarLimit(plan);
   const planLabel =
@@ -443,6 +448,51 @@ export function AccountScreen({ navigation }: Props) {
     ]);
   }
 
+  function handleDeleteAccount() {
+    Alert.alert(
+      'Delete your account?',
+      'This will permanently delete your account and associated data from CarCare Diary.',
+      [
+        { text: 'Cancel', style: 'cancel' },
+        {
+          text: 'Continue',
+          style: 'destructive',
+          onPress: () => {
+            Alert.alert(
+              'This action cannot be undone',
+              'Your vehicles, logs, reminders, analytics, and account data will be permanently removed.',
+              [
+                { text: 'Cancel', style: 'cancel' },
+                {
+                  text: 'Delete my account',
+                  style: 'destructive',
+                  onPress: async () => {
+                    setIsDeleting(true);
+                    try {
+                      await deleteAccount();
+                      navigation.dispatch(
+                        CommonActions.reset({
+                          index: 0,
+                          routes: [{ name: routes.setupFlow }],
+                        }),
+                      );
+                    } catch {
+                      setIsDeleting(false);
+                      Alert.alert(
+                        'Deletion failed',
+                        'Something went wrong while deleting your account. Please try again.',
+                      );
+                    }
+                  },
+                },
+              ],
+            );
+          },
+        },
+      ],
+    );
+  }
+
   if (isAuthenticated && needsUsername) {
     return null;
   }
@@ -462,11 +512,58 @@ export function AccountScreen({ navigation }: Props) {
           onUpgrade={handleUpgrade}
         />
       ) : (
-        <GuestContent onSignIn={handleSignIn} />
+        <View className="gap-4">
+          <GuestContent onSignIn={handleSignIn} />
+
+          {/* Plan card — visible even when not signed in */}
+          {planAction ? (
+            <Pressable
+              className="rounded-2xl bg-[#141A2B] p-5"
+              onPress={handleUpgrade}
+              style={({ pressed }) => ({ opacity: pressed ? 0.85 : 1 })}
+            >
+              <Text
+                className="text-sm text-[#A3ACBF]"
+                style={{ fontFamily: 'Poppins' }}
+              >
+                Plan
+              </Text>
+              <View className="mt-1 flex-row items-center justify-between">
+                <Text
+                  className="text-lg text-white"
+                  style={{ fontFamily: 'Poppins-SemiBold' }}
+                >
+                  {planLabel}
+                </Text>
+                <Text
+                  className="text-sm text-[#367DFF]"
+                  style={{ fontFamily: 'Poppins-SemiBold' }}
+                >
+                  {planAction}
+                </Text>
+              </View>
+            </Pressable>
+          ) : (
+            <View className="rounded-2xl bg-[#141A2B] p-5">
+              <Text
+                className="text-sm text-[#A3ACBF]"
+                style={{ fontFamily: 'Poppins' }}
+              >
+                Plan
+              </Text>
+              <Text
+                className="mt-1 text-lg text-white"
+                style={{ fontFamily: 'Poppins-SemiBold' }}
+              >
+                {planLabel}
+              </Text>
+            </View>
+          )}
+        </View>
       )}
 
-      {/* Upgrade prompt for Base users */}
-      {isAuthenticated && plan === 'base' ? (
+      {/* Upgrade prompt for non-Pro users */}
+      {plan !== 'pro' ? (
         <View className="mt-4">
           <UpgradeToProCard onPress={handleUpgrade} />
         </View>
@@ -475,11 +572,19 @@ export function AccountScreen({ navigation }: Props) {
       {/* Menu items (always visible) */}
       <View style={{ gap: 12, marginTop: 20 }}>
         <MenuRow
-          icon={
-            <Text style={{ fontSize: 18, lineHeight: 22, color: 'rgba(255,255,255,0.2)' }}>
-              {currencySymbol}
-            </Text>
-          }
+          icon={<BellIcon size={20} color="rgba(255,255,255,0.2)" />}
+          label="Reminders"
+          onPress={() => navigation.navigate(routes.reminderSettings)}
+        />
+        {isAuthenticated ? (
+          <MenuRow
+            icon={<BuildingIcon size={20} color="rgba(255,255,255,0.2)" />}
+            label="Company Settings"
+            onPress={() => navigation.navigate(routes.companySettings)}
+          />
+        ) : null}
+        <MenuRow
+          icon={<DollarIcon size={20} color="rgba(255,255,255,0.2)" />}
           label="Currency"
           rightLabel={currencyCode}
           onPress={() => setCurrencyPickerVisible(true)}
@@ -495,8 +600,21 @@ export function AccountScreen({ navigation }: Props) {
           onPress={() => Linking.openURL(PRIVACY_URL).catch(() => {})}
         />
         {isAuthenticated ? (
-          <View className="mt-2">
-            <OutlineButton label="Sign out" onPress={handleSignOut} />
+          <View className="mt-2 gap-3">
+            <OutlineButton label="Sign out" onPress={handleSignOut} disabled={isDeleting} />
+            <Pressable
+              onPress={handleDeleteAccount}
+              disabled={isDeleting}
+              className={`min-h-12 justify-center rounded-xl border border-[#1F2740] bg-[#141A2B] px-4 py-3 ${isDeleting ? 'opacity-60' : 'opacity-100'}`}
+              style={({ pressed }) => ({ opacity: pressed && !isDeleting ? 0.85 : undefined })}
+            >
+              <Text
+                className="text-sm text-[#FF4444]"
+                style={{ fontFamily: 'Poppins-SemiBold' }}
+              >
+                {isDeleting ? 'Deleting account...' : 'Delete Account'}
+              </Text>
+            </Pressable>
           </View>
         ) : null}
       </View>

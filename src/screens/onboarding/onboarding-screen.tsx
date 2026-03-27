@@ -30,6 +30,12 @@ const slides = [
     description: 'Build a clean maintenance history over time.',
     image: require('../../../assets/onboarding-3.png'),
   },
+  {
+    title: 'See where your car money goes',
+    description:
+      'Track maintenance costs by month and spot your biggest expense categories.',
+    image: require('../../../assets/onboarding-4.png'),
+  },
 ] as const;
 
 export function OnboardingScreen({ navigation }: Props) {

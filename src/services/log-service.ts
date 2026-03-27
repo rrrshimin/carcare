@@ -18,7 +18,7 @@ export type CreateLogValidationError = {
 
 export function validateLogInput(
   input: CreateLogInput,
-  options: { mileageRequired: boolean; currentOdometer?: number },
+  options: { mileageRequired: boolean; currentOdometer?: number; unit?: string },
 ): CreateLogValidationError | null {
   if (!input.changeDate) {
     return { field: 'date', message: 'Date is required.' };
@@ -36,9 +36,10 @@ export function validateLogInput(
       options.currentOdometer > 0 &&
       input.odoLog > options.currentOdometer
     ) {
+      const displayUnit = options.unit ?? 'km';
       return {
         field: 'mileage',
-        message: `Mileage cannot exceed current odometer (${options.currentOdometer.toLocaleString()}).`,
+        message: `Mileage cannot exceed current odometer (${options.currentOdometer.toLocaleString()} ${displayUnit}).`,
       };
     }
   }

@@ -6,7 +6,7 @@ type LabeledTextInputProps = {
   value: string;
   onChangeText: (value: string) => void;
   placeholder?: string;
-  keyboardType?: 'default' | 'number-pad';
+  keyboardType?: 'default' | 'number-pad' | 'email-address';
   maxLength?: number;
   rightElement?: ReactNode;
   autoCapitalize?: 'none' | 'sentences' | 'words' | 'characters';

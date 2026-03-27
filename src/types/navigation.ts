@@ -3,9 +3,11 @@ import { routes } from '@/navigation/routes';
 export type SetupFlowStackParamList = {
   [routes.splash]: undefined;
   [routes.onboarding]: undefined;
-  [routes.addVehicle]: undefined;
+  [routes.addVehicle]: { mode?: 'add-another' } | undefined;
   [routes.auth]: undefined;
+  [routes.otpVerification]: { email: string };
   [routes.username]: undefined;
+  [routes.businessDetails]: undefined;
 };
 
 export type AppStackParamList = {
@@ -32,8 +34,14 @@ export type AppStackParamList = {
   [routes.paywall]: undefined;
   [routes.account]: undefined;
   [routes.auth]: undefined;
+  [routes.otpVerification]: { email: string };
   [routes.username]: undefined;
   [routes.transfer]: { vehicleId: number };
+  [routes.reminderSettings]: undefined;
+  [routes.garageAnalytics]: undefined;
+  [routes.export]: undefined;
+  [routes.businessDetails]: undefined;
+  [routes.companySettings]: undefined;
 };
 
 export type RootStackParamList = {

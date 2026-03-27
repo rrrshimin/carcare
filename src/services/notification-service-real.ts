@@ -13,7 +13,7 @@
  *   setNotificationHandler, setNotificationChannelAsync,
  *   getPermissionsAsync, requestPermissionsAsync,
  *   scheduleNotificationAsync, cancelScheduledNotificationAsync,
- *   getAllScheduledNotificationsAsync.
+ *   getAllScheduledNotificationsAsync, addNotificationResponseReceivedListener.
  */
 import * as Notifications from 'expo-notifications';
 import { Platform } from 'react-native';
@@ -30,6 +30,8 @@ Notifications.setNotificationHandler({
     shouldShowAlert: true,
     shouldPlaySound: false,
     shouldSetBadge: false,
+    shouldShowBanner: true,
+    shouldShowList: true,
   }),
 });
 
@@ -59,18 +61,44 @@ async function ensureAndroidChannel(): Promise<void> {
 export async function requestNotificationPermission(): Promise<boolean> {
   try {
     const { status: existing } = await Notifications.getPermissionsAsync();
+
+    if (__DEV__) {
+      console.info(`[Notifications] current permission status: "${existing}"`);
+    }
+
     if (existing === 'granted') return true;
-    if (existing === 'denied') {
-      if (__DEV__) {
-        console.warn(
-          '[Notifications] permission denied by user — scheduling disabled. ' +
-            'Enable in device Settings > Notifications to re-enable reminders.',
-        );
-      }
-      return false;
+
+    // Always try requestPermissionsAsync regardless of current status.
+    // On Android 13+, if the user denied via the OS dialog, this call
+    // returns 'denied' instantly (no dialog shown) — which is fine.
+    // But if the status is stale from a prior install or is 'undetermined',
+    // this triggers the actual OS dialog.
+    if (__DEV__) {
+      console.info('[Notifications] requesting permission from OS…');
     }
 
     const { status } = await Notifications.requestPermissionsAsync();
+
+    if (__DEV__) {
+      console.info(`[Notifications] OS permission result: "${status}"`);
+    }
+
+    return status === 'granted';
+  } catch (error) {
+    if (__DEV__) {
+      console.warn('[Notifications] permission request threw:', error);
+    }
+    return false;
+  }
+}
+
+/**
+ * Returns true when notification permission is already granted.
+ * Never shows the OS prompt — safe to call from background scheduling.
+ */
+export async function hasNotificationPermission(): Promise<boolean> {
+  try {
+    const { status } = await Notifications.getPermissionsAsync();
     return status === 'granted';
   } catch {
     return false;
@@ -80,13 +108,15 @@ export async function requestNotificationPermission(): Promise<boolean> {
 // ── Scheduling ──────────────────────────────────────────────────────
 
 /**
- * Schedules a local notification at the given date.
+ * Schedules a local notification at the given date with optional data payload.
+ *
+ * CHECK-ONLY: verifies permission is already granted. Never shows the
+ * OS permission dialog. The caller is responsible for requesting
+ * permission at an appropriate user-action point before scheduling.
  *
  * Cancel-then-schedule contract:
  *   The old notification with the same identifier is ALWAYS cancelled
- *   first, even when the new trigger date is in the past.  This
- *   prevents stale notifications from surviving when a replacement
- *   date happens to be earlier than "now".
+ *   first, even when the new trigger date is in the past.
  *
  * Returns true when a new notification was successfully scheduled.
  * Returns false (without throwing) when:
@@ -100,10 +130,9 @@ export async function scheduleLocalNotification(
   title: string,
   body: string,
   triggerDate: Date,
+  data?: Record<string, unknown>,
 ): Promise<boolean> {
   try {
-    // Always cancel the previous notification with this ID so stale
-    // reminders are cleaned up even when the replacement date is past.
     await Notifications.cancelScheduledNotificationAsync(identifier).catch(
       () => {},
     );
@@ -126,8 +155,15 @@ export async function scheduleLocalNotification(
       return false;
     }
 
-    const granted = await requestNotificationPermission();
-    if (!granted) return false;
+    const granted = await hasNotificationPermission();
+    if (!granted) {
+      if (__DEV__) {
+        console.info(
+          `[Notifications] skip "${identifier}" — permission not granted`,
+        );
+      }
+      return false;
+    }
 
     await ensureAndroidChannel();
 
@@ -136,6 +172,7 @@ export async function scheduleLocalNotification(
       content: {
         title,
         body,
+        data: data ?? {},
         ...(Platform.OS === 'android' ? { channelId: ANDROID_CHANNEL_ID } : {}),
       },
       trigger: {
@@ -175,14 +212,52 @@ export async function cancelScheduledNotification(
   }
 }
 
-// ── QA / Debug helpers ──────────────────────────────────────────────
+// ── Notification response listener ──────────────────────────────────
 
 /**
- * Returns a summary of every notification currently sitting in the OS
- * schedule queue.  Useful for manual QA to confirm that the right
- * reminders are pending after creating a vehicle, updating mileage,
- * or saving a maintenance log.
+ * Registers a listener that fires when the user taps a notification.
+ * Returns a cleanup function to remove the listener.
  */
+export function addNotificationResponseListener(
+  callback: (data: Record<string, unknown>) => void,
+): () => void {
+  const subscription = Notifications.addNotificationResponseReceivedListener(
+    (response) => {
+      const data = response.notification.request.content.data;
+      if (data && typeof data === 'object') {
+        callback(data as Record<string, unknown>);
+      }
+    },
+  );
+  return () => subscription.remove();
+}
+
+/**
+ * Returns the notification response that launched the app (cold start).
+ */
+export async function getLastNotificationResponse(): Promise<Record<string, unknown> | null> {
+  try {
+    const response = await Notifications.getLastNotificationResponseAsync();
+    if (response?.notification?.request?.content?.data) {
+      return response.notification.request.content.data as Record<string, unknown>;
+    }
+  } catch { /* ignore */ }
+  return null;
+}
+
+// ── Permission status (debug) ────────────────────────────────────────
+
+export async function getPermissionStatus(): Promise<string> {
+  try {
+    const { status } = await Notifications.getPermissionsAsync();
+    return status;
+  } catch {
+    return 'error';
+  }
+}
+
+// ── QA / Debug helpers ──────────────────────────────────────────────
+
 export async function getScheduledNotificationsSummary(): Promise<
   { id: string; title: string; body: string }[]
 > {
@@ -198,14 +273,6 @@ export async function getScheduledNotificationsSummary(): Promise<
   }
 }
 
-/**
- * Dumps all scheduled notifications to the JS console.
- *
- * No-op in production builds.  During development / QA, call from:
- *   • React Native debugger console
- *   • a debug screen button
- *   • an in-app dev menu action
- */
 export async function logScheduledNotifications(): Promise<void> {
   if (!__DEV__) return;
 

@@ -2,6 +2,7 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 
 import { updateDeviceUnit } from '@/services/api/device-api';
 import { uploadVehicleImage } from '@/services/api/storage-api';
+import { prepareVehicleImage } from '@/services/image-optimization-service';
 import {
   createVehicleRecord,
   deleteVehicleRecord,
@@ -150,7 +151,8 @@ export async function createVehicle(
 
   let imageUrl: string | null = null;
   if (input.imageUri) {
-    imageUrl = await uploadVehicleImage(input.imageUri);
+    const optimizedUri = await prepareVehicleImage(input.imageUri);
+    imageUrl = await uploadVehicleImage(optimizedUri);
   }
 
   const vehicle = await createVehicleRecord({
@@ -171,7 +173,6 @@ export async function createVehicle(
 
   const now = new Date().toISOString();
   await setLastMileageUpdate(now, vehicle.id).catch(() => {});
-  scheduleMileageReminder(now).catch(() => {});
 
   return vehicle;
 }
@@ -196,7 +197,8 @@ export async function editVehicle(
 
   let imageUrl: string | undefined;
   if (input.imageUri) {
-    imageUrl = await uploadVehicleImage(input.imageUri);
+    const optimizedUri = await prepareVehicleImage(input.imageUri);
+    imageUrl = await uploadVehicleImage(optimizedUri);
   }
 
   const fields: { name?: string; image_url?: string } = {};
@@ -298,7 +300,7 @@ export async function updateMileage(
 
   const now = new Date().toISOString();
   await setLastMileageUpdate(now, vehicleId).catch(() => {});
-  scheduleMileageReminder(now).catch(() => {});
+  scheduleMileageReminder(now, vehicleId, updated.name ?? undefined).catch(() => {});
 
   return updated;
 }

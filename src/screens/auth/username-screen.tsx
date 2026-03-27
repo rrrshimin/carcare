@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import {
   Alert,
   Keyboard,
@@ -16,6 +16,7 @@ import { LabeledTextInput } from '@/components/inputs/labeled-text-input';
 import { ScreenTitleBlock } from '@/components/layout/screen-title-block';
 import { useAuth } from '@/context/auth-context';
 import { createProfile } from '@/services/api/user-profile-api';
+import { loadEntitlement } from '@/hooks/use-entitlement';
 import { routes } from '@/navigation/routes';
 
 const VALID_USERNAME = /^[a-zA-Z0-9\-,.\s]+$/;
@@ -28,8 +29,15 @@ export function UsernameScreen() {
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
+  // Tracks whether handleSave is actively routing. When true the
+  // safety-net effect must not compete with the explicit navigation.
+  const handledRef = useRef(false);
+
+  // Safety net: if the user already has a profile when this screen
+  // mounts (e.g. deep-link race or back-navigation), redirect to app.
+  // Skipped while handleSave is in control of the navigation.
   useEffect(() => {
-    if (userProfile) {
+    if (userProfile && !handledRef.current) {
       navigation.dispatch(
         CommonActions.reset({ index: 0, routes: [{ name: routes.appFlow }] }),
       );
@@ -60,13 +68,23 @@ export function UsernameScreen() {
 
     setError(null);
     setSaving(true);
+    handledRef.current = true;
     try {
       await createProfile(session.user.id, username.trim());
+
+      // Ensure entitlement is fresh before deciding the route
+      const plan = await loadEntitlement();
       await refreshProfile();
-      navigation.dispatch(
-        CommonActions.reset({ index: 0, routes: [{ name: routes.appFlow }] }),
-      );
+
+      if (plan === 'pro') {
+        navigation.navigate(routes.businessDetails);
+      } else {
+        navigation.dispatch(
+          CommonActions.reset({ index: 0, routes: [{ name: routes.appFlow }] }),
+        );
+      }
     } catch (e) {
+      handledRef.current = false;
       const msg = e instanceof Error ? e.message : 'Failed to save username.';
       setError(msg);
     } finally {

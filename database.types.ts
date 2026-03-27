@@ -14,6 +14,36 @@ export type Database = {
   }
   public: {
     Tables: {
+      company_profiles: {
+        Row: {
+          id: string
+          auth_user_id: string
+          company_name: string
+          billing_email: string
+          business_address: string | null
+          created_at: string
+          updated_at: string
+        }
+        Insert: {
+          id?: string
+          auth_user_id: string
+          company_name: string
+          billing_email: string
+          business_address?: string | null
+          created_at?: string
+          updated_at?: string
+        }
+        Update: {
+          id?: string
+          auth_user_id?: string
+          company_name?: string
+          billing_email?: string
+          business_address?: string | null
+          created_at?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
       log_categories: {
         Row: {
           category_name: string | null

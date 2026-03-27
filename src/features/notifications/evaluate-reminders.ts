@@ -1,85 +1,53 @@
+/**
+ * Central evaluation entry point for all local notification reminders.
+ *
+ * LOCAL-ONLY MVP SCOPE:
+ *   All reminders use local system notifications. No remote push, no
+ *   Firebase, no backend cron. Fires even if the app is closed (pre-scheduled).
+ *
+ * REMINDER TYPES COVERED:
+ *   1. Mileage update reminder — configurable interval (off/7/14/30 days)
+ *   2. Mileage-based due-soon reminders — two-tier (≤1000/≤2000)
+ *   3. Time-based due-soon reminders — two-tier (≤14d/≤30d)
+ *
+ * FUTURE (requires backend push / server scheduler):
+ *   • True mileage-based pre-scheduling (needs driving pattern estimation)
+ *   • Multi-device notification sync
+ *   • Rich notification actions (snooze, mark done)
+ */
 import {
-  MILEAGE_REMINDER_AFTER_DAYS,
-  NOTIFICATION_IDS,
-  SERVICE_REMINDER_COOLDOWN_DAYS,
+  LEGACY_SERVICE_REMINDER_ID,
 } from '@/constants/notification-config';
 import { getMaintenanceSummary } from '@/features/maintenance/get-maintenance-summary';
 import type { VehicleScreenData } from '@/hooks/use-vehicle-data';
+import { cancelScheduledNotification } from '@/services/notification-service';
 import {
-  cancelScheduledNotification,
-  scheduleLocalNotification,
-} from '@/services/notification-service';
+  getReminderSettings,
+  getMileageReminderDays,
+} from '@/services/reminder-settings-service';
 import {
   getLastMileageUpdate,
-  getStoredJson,
   setLastMileageUpdate,
-  setStoredJson,
 } from '@/services/storage-service';
+import { convertDistance } from '@/utils/calculations/convert-distance';
 import { getLatestLog } from '@/utils/calculations/get-latest-log';
+import { getEffectiveDueInterval } from '@/utils/calculations/get-effective-due-interval';
+import type { DistanceUnit } from '@/types/vehicle';
 
-import { daysBetween, daysFromNow, tomorrowMorning } from './date-helpers';
 import { scheduleMileageReminder } from './schedule-mileage-reminder';
-import { scheduleTimeBasedReminders } from './schedule-service-reminders';
-
-const SERVICE_COOLDOWN_PREFIX = 'carcare.last_service_reminder';
+import {
+  scheduleMileageBasedReminder,
+  scheduleTimeBasedReminders,
+} from './schedule-service-reminders';
 
 // ── Re-exports for backward compatibility / testability ──────────────
 
 export { tomorrowMorning, daysFromNow, daysBetween } from './date-helpers';
 
-// ── Pure helpers (exported for testability) ──────────────────────────
-
-/**
- * Returns the trigger date for the next mileage reminder.
- * Pure function — no side-effects, easy to unit-test.
- *
- * @param lastUpdateIso  ISO-8601 timestamp of the last mileage update.
- * @param now            Current date (injectable for tests).
- */
-export function computeMileageTriggerDate(
-  lastUpdateIso: string,
-  now: Date = new Date(),
-): Date {
-  const elapsed = daysBetween(new Date(lastUpdateIso), now);
-  const daysUntilDue = MILEAGE_REMINDER_AFTER_DAYS - elapsed;
-  return daysUntilDue <= 0 ? tomorrowMorning() : daysFromNow(daysUntilDue);
-}
-
-/**
- * Collects maintenance items in warning or overdue state.
- * Pure function — no side-effects, easy to unit-test.
- */
-export function collectDueItems(
-  data: VehicleScreenData,
-): { id: number; name: string }[] {
-  const summary = getMaintenanceSummary(data);
-  const items: { id: number; name: string }[] = [];
-
-  for (const category of summary) {
-    for (const item of category.items) {
-      if (item.status.variant === 'warning' || item.status.variant === 'overdue') {
-        items.push({ id: item.id, name: item.name });
-      }
-    }
-  }
-
-  return items;
-}
-
-/** Builds the notification body from a list of due items. */
-export function buildServiceReminderBody(
-  dueItems: { name: string }[],
-): string {
-  if (dueItems.length === 1) {
-    return `Time to change ${dueItems[0].name}.`;
-  }
-  return `${dueItems.length} maintenance items need attention.`;
-}
-
 // ── Mileage Reminder (safety net) ───────────────────────────────────
 
 /**
- * Safety-net scheduling for the mileage reminder.
+ * Safety-net scheduling for the mileage update reminder.
  *
  * The PRIMARY scheduling happens at data-mutation points:
  *   • createVehicle() — seeds the initial reminder
@@ -88,16 +56,32 @@ export function buildServiceReminderBody(
  * This function ensures the reminder exists even if those primary
  * triggers were missed (e.g. app upgrade, AsyncStorage cleared).
  */
-async function evaluateMileageReminder(vehicleId: number): Promise<void> {
-  let lastUpdate = await getLastMileageUpdate(vehicleId);
+async function evaluateMileageReminder(
+  vehicle: { id: number; name: string | null },
+): Promise<void> {
+  const settings = await getReminderSettings();
+  const intervalDays = getMileageReminderDays(settings.mileageReminderInterval);
+
+  if (intervalDays === null) {
+    // User disabled mileage reminders — make sure nothing is scheduled
+    const { cancelMileageReminder } = await import('./schedule-mileage-reminder');
+    await cancelMileageReminder(vehicle.id);
+    return;
+  }
+
+  let lastUpdate = await getLastMileageUpdate(vehicle.id);
 
   if (!lastUpdate) {
     const fallback = await getLastMileageUpdate();
     lastUpdate = fallback ?? new Date().toISOString();
-    await setLastMileageUpdate(lastUpdate, vehicleId);
+    await setLastMileageUpdate(lastUpdate, vehicle.id);
   }
 
-  await scheduleMileageReminder(lastUpdate);
+  await scheduleMileageReminder(
+    lastUpdate,
+    vehicle.id,
+    vehicle.name ?? undefined,
+  );
 }
 
 // ── Time-Based Service Reminders (safety net) ───────────────────────
@@ -115,6 +99,7 @@ async function evaluateMileageReminder(vehicleId: number): Promise<void> {
  */
 async function ensureTimeBasedNotifications(data: VehicleScreenData): Promise<void> {
   const { vehicle, logTypes, userLogs } = data;
+  const carName = vehicle.name ?? 'Your car';
   const timeBasedTypes = logTypes.filter((lt) => lt.due_type === 'time');
 
   const promises = timeBasedTypes.map((logType) => {
@@ -126,79 +111,75 @@ async function ensureTimeBasedNotifications(data: VehicleScreenData): Promise<vo
       logType,
       latestLog.change_date,
       vehicle.fuel_type,
+      carName,
     );
   });
 
   await Promise.allSettled(promises);
 }
 
-// ── Mileage-Based Service Reminders (reactive only) ─────────────────
+// ── Mileage-Based Service Reminders (reactive) ──────────────────────
 
 /**
- * REACTIVE notification for mileage-based service items.
+ * REACTIVE scheduling for mileage-based service items.
  *
  * Mileage-based items CANNOT be truly pre-scheduled because we
  * do not know when the user will reach the distance threshold.
  * This is a KNOWN LIMITATION of the local-notification approach.
  *
- * This function runs on every Home screen load and schedules a
- * combined "tomorrow morning" notification if any mileage-based
- * items are currently in warning or overdue state.
+ * This function runs on every Vehicle screen load and evaluates
+ * each mileage-based item individually using the two-tier model:
+ *   • remaining ≤1000 → schedule in 7 days
+ *   • remaining ≤2000 → schedule in 14 days
+ *
+ * Each item gets its own stable notification ID, so updating mileage
+ * or adding a log automatically replaces the old reminder.
  *
  * FUTURE: Replace with backend push notifications that trigger
- * when mileage-based thresholds are crossed, or when the backend
- * can estimate driving patterns to predict threshold dates.
+ * when mileage-based thresholds are crossed.
  */
 async function evaluateMileageBasedServiceReminders(
   data: VehicleScreenData,
 ): Promise<void> {
-  const summary = getMaintenanceSummary(data);
-  const dueItems: { id: number; name: string }[] = [];
+  // Cancel the legacy combined service reminder from older versions
+  cancelScheduledNotification(LEGACY_SERVICE_REMINDER_ID).catch(() => {});
 
-  for (const category of summary) {
-    for (const item of category.items) {
-      if (
-        item.status.variant === 'warning' ||
-        item.status.variant === 'overdue'
-      ) {
-        const logType = data.logTypes.find((lt) => lt.id === item.id);
-        if (logType?.due_type !== 'time') {
-          dueItems.push({ id: item.id, name: item.name });
-        }
-      }
-    }
-  }
+  const { vehicle, device, logTypes, userLogs } = data;
+  const carName = vehicle.name ?? 'Your car';
+  const currentOdometer = vehicle.current_odometer ?? 0;
+  const fuelType = vehicle.fuel_type;
+  const unit: DistanceUnit = device.unit === 'mi' ? 'mi' : 'km';
 
-  if (dueItems.length === 0) {
-    await cancelScheduledNotification(NOTIFICATION_IDS.serviceReminder);
-    return;
-  }
+  const mileageTypes = logTypes.filter((lt) => lt.due_type !== 'time');
 
-  const cooldownKey = `${SERVICE_COOLDOWN_PREFIX}.${data.vehicle.id}`;
-  const lastSent = await getStoredJson<string>(cooldownKey);
-  if (lastSent) {
-    const elapsed = daysBetween(new Date(lastSent), new Date());
-    if (elapsed < SERVICE_REMINDER_COOLDOWN_DAYS) return;
-  }
+  const promises = mileageTypes.map((logType) => {
+    const latestLog = getLatestLog(userLogs, logType.id, vehicle.id);
+    if (!latestLog?.odo_log) return Promise.resolve();
 
-  const body = buildServiceReminderBody(dueItems);
+    const effectiveDueKm = getEffectiveDueInterval(logType, fuelType);
+    if (effectiveDueKm <= 0) return Promise.resolve();
 
-  const sent = await scheduleLocalNotification(
-    NOTIFICATION_IDS.serviceReminder,
-    'CarCare Diary',
-    body,
-    tomorrowMorning(),
-  );
+    const effectiveDue = convertDistance(effectiveDueKm, unit);
+    const nextDueOdometer = latestLog.odo_log + effectiveDue;
+    const remaining = nextDueOdometer - currentOdometer;
 
-  if (sent) {
-    await setStoredJson(cooldownKey, new Date().toISOString());
-  }
+    return scheduleMileageBasedReminder(
+      vehicle.id,
+      logType.id,
+      logType.log_type_name ?? 'maintenance item',
+      carName,
+      remaining,
+      unit,
+    );
+  });
+
+  await Promise.allSettled(promises);
 }
 
 // ── Public Entry Point ──────────────────────────────────────────────
 
 /**
- * Evaluates all notification reminders based on current home data.
+ * Evaluates all notification reminders based on current vehicle data.
  *
  * This is the SECONDARY SAFETY NET — not the primary trigger.
  *
@@ -207,15 +188,17 @@ async function evaluateMileageBasedServiceReminders(
  *   • updateMileage()       → reschedules mileage reminder
  *   • addMaintenanceLog()   → schedules time-based service reminders
  *
- * This function ensures completeness on Home screen load:
- *   1. Mileage reminder — re-verifies it's scheduled
- *   2. Time-based service reminders — ensures all items are covered
- *   3. Mileage-based service reminders — REACTIVE ONLY, cannot be
- *      pre-scheduled (known limitation, see function above)
+ * This function ensures completeness on Vehicle screen load:
+ *   1. Mileage update reminder — re-verifies it's scheduled
+ *   2. Due-soon service reminders (both time-based and mileage-based)
+ *      — only if the user has due-soon reminders enabled
+ *
+ * Respects user settings from Reminder Settings screen:
+ *   • mileageReminderInterval: off / 7 / 14 / 30
+ *   • dueSoonRemindersEnabled: true / false
  *
  * Safe to call on every vehicle-screen focus:
  *   • Scheduling is idempotent (cancel-then-schedule with stable IDs).
- *   • Mileage-based service reminders have a 7-day cooldown.
  *   • The hook layer adds a 60-second debounce on top.
  *
  * Uses `Promise.allSettled` so a failure in one area does not
@@ -223,11 +206,18 @@ async function evaluateMileageBasedServiceReminders(
  */
 export async function evaluateReminders(data: VehicleScreenData): Promise<void> {
   try {
-    await Promise.allSettled([
-      evaluateMileageReminder(data.vehicle.id),
-      ensureTimeBasedNotifications(data),
-      evaluateMileageBasedServiceReminders(data),
-    ]);
+    const settings = await getReminderSettings();
+
+    const tasks: Promise<void>[] = [
+      evaluateMileageReminder(data.vehicle),
+    ];
+
+    if (settings.dueSoonRemindersEnabled) {
+      tasks.push(ensureTimeBasedNotifications(data));
+      tasks.push(evaluateMileageBasedServiceReminders(data));
+    }
+
+    await Promise.allSettled(tasks);
   } catch {
     // Belt-and-suspenders: never crash the app over notifications.
   }

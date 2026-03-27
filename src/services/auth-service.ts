@@ -127,6 +127,66 @@ export async function signInWithGoogle(): Promise<Session | null> {
   }
 }
 
+/**
+ * Sends a passwordless OTP code to the given email address.
+ * Works for both new and existing users (shouldCreateUser: true).
+ */
+export async function sendEmailOtp(email: string): Promise<void> {
+  console.log('[Auth] ── sendEmailOtp ──');
+  console.log('[Auth] email:', email);
+
+  const { data, error } = await supabase.auth.signInWithOtp({
+    email,
+    options: { shouldCreateUser: true },
+  });
+
+  console.log('[Auth] signInWithOtp response data:', JSON.stringify(data, null, 2));
+
+  if (error) {
+    console.error('[Auth] signInWithOtp error name:', error.name);
+    console.error('[Auth] signInWithOtp error message:', error.message);
+    console.error('[Auth] signInWithOtp error status:', error.status);
+    console.error('[Auth] signInWithOtp full error:', JSON.stringify(error, null, 2));
+    throw error;
+  }
+
+  console.log('[Auth] OTP sent successfully');
+}
+
+/**
+ * Verifies a 6-digit OTP code for the given email.
+ * Returns the Supabase session on success.
+ */
+export async function verifyEmailOtp(
+  email: string,
+  token: string,
+): Promise<Session> {
+  console.log('[Auth] ── verifyEmailOtp ──');
+  console.log('[Auth] email:', email, '| token length:', token.length);
+
+  const { data, error } = await supabase.auth.verifyOtp({
+    email,
+    token,
+    type: 'email',
+  });
+
+  if (error) {
+    console.error('[Auth] verifyOtp error name:', error.name);
+    console.error('[Auth] verifyOtp error message:', error.message);
+    console.error('[Auth] verifyOtp error status:', error.status);
+    console.error('[Auth] verifyOtp full error:', JSON.stringify(error, null, 2));
+    throw error;
+  }
+
+  if (!data.session) {
+    console.error('[Auth] verifyOtp: no session in response data:', JSON.stringify(data, null, 2));
+    throw new Error('OTP verification succeeded but no session was returned.');
+  }
+
+  console.log('[Auth] OTP verified, user:', data.session.user?.email);
+  return data.session;
+}
+
 export async function signOut(): Promise<void> {
   const { error } = await supabase.auth.signOut();
   if (error) throw error;

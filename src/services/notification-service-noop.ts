@@ -17,11 +17,16 @@ export async function requestNotificationPermission(): Promise<boolean> {
   return false;
 }
 
+export async function hasNotificationPermission(): Promise<boolean> {
+  return false;
+}
+
 export async function scheduleLocalNotification(
   _identifier: string,
   _title: string,
   _body: string,
   _triggerDate: Date,
+  _data?: Record<string, unknown>,
 ): Promise<boolean> {
   return false;
 }
@@ -29,6 +34,20 @@ export async function scheduleLocalNotification(
 export async function cancelScheduledNotification(
   _identifier: string,
 ): Promise<void> {}
+
+export function addNotificationResponseListener(
+  _callback: (data: Record<string, unknown>) => void,
+): () => void {
+  return () => {};
+}
+
+export async function getLastNotificationResponse(): Promise<Record<string, unknown> | null> {
+  return null;
+}
+
+export async function getPermissionStatus(): Promise<string> {
+  return 'noop';
+}
 
 export async function getScheduledNotificationsSummary(): Promise<
   { id: string; title: string; body: string }[]

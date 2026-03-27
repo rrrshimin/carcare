@@ -15,16 +15,22 @@ import { useNavigation } from '@react-navigation/native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { GoogleLogoIcon, AppleLogoIcon } from '@/components/icons/app-icons';
-import { ScreenTitleBlock } from '@/components/layout/screen-title-block';
+import { LabeledTextInput } from '@/components/inputs/labeled-text-input';
+import { PrimaryButton } from '@/components/buttons/primary-button';
 import { useAuth } from '@/context/auth-context';
-import { signInWithGoogle } from '@/services/auth-service';
+import { signInWithGoogle, sendEmailOtp } from '@/services/auth-service';
 import { routes } from '@/navigation/routes';
+
+const EMAIL_REGEX = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
 export function AuthScreen() {
   const navigation = useNavigation<any>();
   const insets = useSafeAreaInsets();
   const { refreshProfile, isAuthenticated, needsUsername } = useAuth();
   const [loading, setLoading] = useState(false);
+  const [email, setEmail] = useState('');
+  const [emailError, setEmailError] = useState<string | null>(null);
+  const [emailSending, setEmailSending] = useState(false);
 
   useEffect(() => {
     if (isAuthenticated) {
@@ -62,6 +68,32 @@ export function AuthScreen() {
     }
   }
 
+  async function handleEmailOtp() {
+    const trimmed = email.trim().toLowerCase();
+    if (!trimmed) {
+      setEmailError('Email is required.');
+      return;
+    }
+    if (!EMAIL_REGEX.test(trimmed)) {
+      setEmailError('Please enter a valid email address.');
+      return;
+    }
+
+    setEmailError(null);
+    setEmailSending(true);
+    try {
+      await sendEmailOtp(trimmed);
+      navigation.navigate(routes.otpVerification, { email: trimmed });
+    } catch (e) {
+      const msg =
+        e instanceof Error ? e.message : 'Failed to send verification code.';
+      Alert.alert('Email error', msg);
+    } finally {
+      setEmailSending(false);
+    }
+  }
+
+  const isBusy = loading || emailSending;
   const headerShown = navigation.getParent?.() !== undefined;
 
   return (
@@ -80,18 +112,47 @@ export function AuthScreen() {
           }}
           keyboardShouldPersistTaps="handled"
         >
-          <ScreenTitleBlock
-            title="Create your account"
-            subtitle="An account lets you manage multiple cars, access subscriptions, and keep your data safe."
-          />
+          <Text className="mb-6 text-sm leading-5 text-[#A3ACBF]">
+            An account lets you manage multiple cars, access subscriptions, and keep your data safe.
+          </Text>
 
-          <View className="mt-10 gap-4">
+          {/* ── Email OTP ───────────────────────────────────────────── */}
+          <View className="gap-4">
+            <LabeledTextInput
+              label="Email"
+              placeholder="Enter your email"
+              value={email}
+              onChangeText={(text) => {
+                setEmail(text);
+                if (emailError) setEmailError(null);
+              }}
+              keyboardType="email-address"
+              autoCapitalize="none"
+              autoCorrect={false}
+              error={emailError}
+            />
+            <PrimaryButton
+              label="Continue with Email"
+              onPress={handleEmailOtp}
+              disabled={isBusy || !email.trim()}
+            />
+          </View>
+
+          {/* ── Divider ─────────────────────────────────────────────── */}
+          <View className="mt-8 flex-row items-center gap-4">
+            <View className="h-px flex-1 bg-[#1F2740]" />
+            <Text className="text-sm text-[#A3ACBF]">or</Text>
+            <View className="h-px flex-1 bg-[#1F2740]" />
+          </View>
+
+          {/* ── Social sign-in ──────────────────────────────────────── */}
+          <View className="mt-6 gap-4">
             <Pressable
               onPress={handleGoogle}
-              disabled={loading}
+              disabled={isBusy}
               className="min-h-[52px] flex-row items-center justify-center gap-3 rounded-xl bg-white px-4 py-3"
               style={({ pressed }) => ({
-                opacity: loading ? 0.6 : pressed ? 0.85 : 1,
+                opacity: isBusy ? 0.6 : pressed ? 0.85 : 1,
               })}
             >
               <GoogleLogoIcon size={20} />

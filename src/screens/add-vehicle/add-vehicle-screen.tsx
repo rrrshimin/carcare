@@ -1,8 +1,10 @@
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import {
+  Alert,
   Image,
   Keyboard,
   KeyboardAvoidingView,
+  Linking,
   Platform,
   Pressable,
   ScrollView,
@@ -16,11 +18,17 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import * as ImagePicker from 'expo-image-picker';
 
 import { PrimaryButton } from '@/components/buttons/primary-button';
+import { ReminderOptInSheet } from '@/components/feedback/reminder-opt-in-sheet';
+import { BackArrowIcon } from '@/components/icons/app-icons';
 import { LabeledTextInput } from '@/components/inputs/labeled-text-input';
 import { OptionPillGroup } from '@/components/inputs/option-pill-group';
 import { ScreenTitleBlock } from '@/components/layout/screen-title-block';
 import { useAuth } from '@/context/auth-context';
+import { scheduleMileageReminder } from '@/features/notifications/schedule-mileage-reminder';
 import { routes } from '@/navigation/routes';
+import { getDeviceByDeviceId } from '@/services/api/device-api';
+import { requestNotificationPermission } from '@/services/notification-service';
+import { getDeviceId, getLastMileageUpdate } from '@/services/storage-service';
 import { createVehicle, getAllVehicles } from '@/services/vehicle-service';
 import { SetupFlowStackParamList } from '@/types/navigation';
 import { DistanceUnit, FuelType, Transmission } from '@/types/vehicle';
@@ -45,9 +53,10 @@ function formatWithCommas(digits: string): string {
   return digits.replace(/\B(?=(\d{3})+(?!\d))/g, ',');
 }
 
-export function AddVehicleScreen({ navigation }: Props) {
+export function AddVehicleScreen({ navigation, route }: Props) {
   const insets = useSafeAreaInsets();
   const { isGuest } = useAuth();
+  const isAddAnother = route.params?.mode === 'add-another';
   const [form, setForm] = useState<FormState>({
     imageUri: '',
     name: '',
@@ -60,6 +69,36 @@ export function AddVehicleScreen({ navigation }: Props) {
   const [error, setError] = useState<string | null>(null);
   const [fieldErrors, setFieldErrors] = useState<Partial<Record<'name' | 'year' | 'odometer', string>>>({});
   const [submitting, setSubmitting] = useState(false);
+  const [optInVisible, setOptInVisible] = useState(false);
+  const [createdVehicle, setCreatedVehicle] = useState<{ id: number; name: string | null } | null>(null);
+
+  useEffect(() => {
+    if (!isAddAnother) return;
+    let cancelled = false;
+    (async () => {
+      const deviceId = await getDeviceId();
+      if (!deviceId || cancelled) return;
+      const device = await getDeviceByDeviceId(deviceId);
+      if (cancelled) return;
+      const storedUnit = (device?.unit as DistanceUnit) ?? 'km';
+      setForm((prev) => ({ ...prev, unit: storedUnit }));
+    })();
+    return () => { cancelled = true; };
+  }, [isAddAnother]);
+
+  function handleBack() {
+    navigation.dispatch(
+      CommonActions.reset({
+        index: 0,
+        routes: [
+          {
+            name: routes.appFlow,
+            state: { routes: [{ name: routes.garage }] },
+          },
+        ],
+      }),
+    );
+  }
 
   const currentYear = useMemo(() => new Date().getFullYear(), []);
   const odometerDisplay = form.odometer ? formatWithCommas(form.odometer) : '';
@@ -139,13 +178,77 @@ export function AddVehicleScreen({ navigation }: Props) {
     }
   }
 
+  function navigateToApp(isMultiCar: boolean) {
+    if (isMultiCar) {
+      navigation.dispatch(
+        CommonActions.reset({
+          index: 0,
+          routes: [
+            {
+              name: routes.appFlow,
+              state: { routes: [{ name: routes.garage }] },
+            },
+          ],
+        }),
+      );
+    } else {
+      navigation.dispatch(
+        CommonActions.reset({
+          index: 0,
+          routes: [{ name: routes.appFlow }],
+        }),
+      );
+    }
+  }
+
+  async function handleOptInEnable() {
+    const granted = await requestNotificationPermission();
+
+    if (granted && createdVehicle) {
+      const lastUpdate = await getLastMileageUpdate(createdVehicle.id);
+      if (lastUpdate) {
+        await scheduleMileageReminder(
+          lastUpdate,
+          createdVehicle.id,
+          createdVehicle.name ?? undefined,
+        );
+      }
+      setOptInVisible(false);
+      navigateToApp(false);
+      return;
+    }
+
+    // OS refused to show the dialog (previously denied / stale state).
+    // Guide the user to device settings instead.
+    setOptInVisible(false);
+    Alert.alert(
+      'Enable in Settings',
+      'Android blocked the permission request. Please enable notifications manually in your device settings.',
+      [
+        { text: 'Skip', style: 'cancel', onPress: () => navigateToApp(false) },
+        {
+          text: 'Open Settings',
+          onPress: () => {
+            Linking.openSettings();
+            navigateToApp(false);
+          },
+        },
+      ],
+    );
+  }
+
+  function handleOptInSkip() {
+    setOptInVisible(false);
+    navigateToApp(false);
+  }
+
   async function handleSubmit() {
     if (!validate()) return;
 
     setError(null);
     setSubmitting(true);
     try {
-      await createVehicle({
+      const vehicle = await createVehicle({
         imageUri: form.imageUri,
         name: form.name,
         year: Number(form.year),
@@ -158,24 +261,16 @@ export function AddVehicleScreen({ navigation }: Props) {
       const vehicles = await getAllVehicles();
 
       if (vehicles.length >= 2) {
-        navigation.dispatch(
-          CommonActions.reset({
-            index: 0,
-            routes: [
-              {
-                name: routes.appFlow,
-                state: { routes: [{ name: routes.garage }] },
-              },
-            ],
-          }),
-        );
+        // Additional car — permission already decided, schedule directly
+        const lastUpdate = await getLastMileageUpdate(vehicle.id);
+        if (lastUpdate) {
+          scheduleMileageReminder(lastUpdate, vehicle.id, vehicle.name ?? undefined).catch(() => {});
+        }
+        navigateToApp(true);
       } else {
-        navigation.dispatch(
-          CommonActions.reset({
-            index: 0,
-            routes: [{ name: routes.appFlow }],
-          }),
-        );
+        // First car — show opt-in sheet before navigating
+        setCreatedVehicle({ id: vehicle.id, name: vehicle.name });
+        setOptInVisible(true);
       }
     } catch (e) {
       setError(
@@ -224,14 +319,31 @@ export function AddVehicleScreen({ navigation }: Props) {
         <ScrollView
           className="flex-1"
           contentContainerStyle={{
-            paddingTop: insets.top + 24,
+            paddingTop: insets.top + (isAddAnother ? 12 : 24),
             paddingHorizontal: 16,
             paddingBottom: 32,
             gap: 12,
           }}
           keyboardShouldPersistTaps="handled"
         >
-          <ScreenTitleBlock title="Add Vehicle" subtitle="Let's add your vehicle to start tracking maintenance." />
+          {isAddAnother ? (
+            <Pressable
+              onPress={handleBack}
+              className="mb-2 self-start rounded-full bg-black/40 p-2"
+              hitSlop={8}
+            >
+              <BackArrowIcon size={24} />
+            </Pressable>
+          ) : null}
+
+          <ScreenTitleBlock
+            title={isAddAnother ? 'Add New Car' : 'Add Vehicle'}
+            subtitle={
+              isAddAnother
+                ? 'Add another vehicle to your garage.'
+                : "Let's add your vehicle to start tracking maintenance."
+            }
+          />
 
           <View className="gap-2">
             <Text className="text-sm text-[#A3ACBF]">Vehicle Photo</Text>
@@ -291,7 +403,7 @@ export function AddVehicleScreen({ navigation }: Props) {
             keyboardType="number-pad"
             value={odometerDisplay}
             onChangeText={handleOdometerChange}
-            rightElement={unitToggle}
+            rightElement={isAddAnother ? undefined : unitToggle}
             error={fieldErrors.odometer}
           />
 
@@ -299,7 +411,7 @@ export function AddVehicleScreen({ navigation }: Props) {
 
           <PrimaryButton className="mt-2" disabled={submitting} onPress={handleSubmit} label={submitting ? 'Adding...' : 'Add'} />
 
-          {isGuest && (
+          {isGuest && !isAddAnother && (
             <Pressable
               className="mt-4 items-center py-2"
               onPress={() => navigation.navigate(routes.auth)}
@@ -315,6 +427,12 @@ export function AddVehicleScreen({ navigation }: Props) {
           )}
         </ScrollView>
       </TouchableWithoutFeedback>
+
+      <ReminderOptInSheet
+        visible={optInVisible}
+        onEnable={handleOptInEnable}
+        onSkip={handleOptInSkip}
+      />
     </KeyboardAvoidingView>
   );
 }

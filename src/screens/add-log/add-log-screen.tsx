@@ -43,6 +43,7 @@ export function AddLogScreen({ navigation, route }: Props) {
   const [vehicleId, setVehicleId] = useState<number | null>(null);
   const [currentOdometer, setCurrentOdometer] = useState<number>(0);
   const [fuelType, setFuelType] = useState<string | null>(null);
+  const [carName, setCarName] = useState<string | undefined>(undefined);
   const [unit, setUnit] = useState<string>('km');
   const [currencyCode, setCurrencyCode] = useState<string>(DEFAULT_CURRENCY_CODE);
   const [initLoading, setInitLoading] = useState(true);
@@ -80,6 +81,7 @@ export function AddLogScreen({ navigation, route }: Props) {
           setVehicleId(vehicle.id);
           setCurrentOdometer(vehicle.current_odometer ?? 0);
           setFuelType(vehicle.fuel_type);
+          setCarName(vehicle.name ?? undefined);
           setUnit(device?.unit ?? 'km');
           setCurrencyCode(device?.currency_code ?? cachedCurrency);
         } catch (e) {
@@ -133,6 +135,7 @@ export function AddLogScreen({ navigation, route }: Props) {
     const error = validateLogInput(input, {
       mileageRequired: isMileageBased,
       currentOdometer,
+      unit,
     });
     if (error) {
       setValidationError(error);
@@ -142,7 +145,7 @@ export function AddLogScreen({ navigation, route }: Props) {
 
     try {
       setSaving(true);
-      await addMaintenanceLog(input, logType!, fuelType);
+      await addMaintenanceLog(input, logType!, fuelType, carName);
       navigation.navigate(routes.vehicle);
     } catch (e) {
       Alert.alert(

@@ -25,10 +25,11 @@ import * as noop from './notification-service-noop';
 
 const _isExpoGo = isRunningInExpoGo();
 
-if (_isExpoGo && __DEV__) {
+if (__DEV__) {
   console.info(
-    '[Notifications] Expo Go detected — notifications disabled at runtime. ' +
-      'Use a development build (npx expo run:android) to test notifications.',
+    _isExpoGo
+      ? '[Notifications] Expo Go detected — using NOOP implementation. Use a dev build to test notifications.'
+      : '[Notifications] Dev/production build detected — using REAL implementation.',
   );
 }
 
@@ -49,16 +50,22 @@ export async function requestNotificationPermission(): Promise<boolean> {
   return impl ? impl.requestNotificationPermission() : noop.requestNotificationPermission();
 }
 
+export async function hasNotificationPermission(): Promise<boolean> {
+  const impl = await getReal();
+  return impl ? impl.hasNotificationPermission() : noop.hasNotificationPermission();
+}
+
 export async function scheduleLocalNotification(
   identifier: string,
   title: string,
   body: string,
   triggerDate: Date,
+  data?: Record<string, unknown>,
 ): Promise<boolean> {
   const impl = await getReal();
   return impl
-    ? impl.scheduleLocalNotification(identifier, title, body, triggerDate)
-    : noop.scheduleLocalNotification(identifier, title, body, triggerDate);
+    ? impl.scheduleLocalNotification(identifier, title, body, triggerDate, data)
+    : noop.scheduleLocalNotification(identifier, title, body, triggerDate, data);
 }
 
 export async function cancelScheduledNotification(
@@ -68,6 +75,32 @@ export async function cancelScheduledNotification(
   return impl
     ? impl.cancelScheduledNotification(identifier)
     : noop.cancelScheduledNotification(identifier);
+}
+
+export function addNotificationResponseListener(
+  callback: (data: Record<string, unknown>) => void,
+): (() => void) | Promise<() => void> {
+  if (_isExpoGo) return noop.addNotificationResponseListener(callback);
+
+  // For dev/prod builds we need the real module. Since getReal() is async
+  // but listeners must be registered synchronously where possible, we
+  // eagerly load the real module and return a cleanup promise.
+  return getReal().then((impl) => {
+    if (!impl) return noop.addNotificationResponseListener(callback);
+    return impl.addNotificationResponseListener(callback);
+  });
+}
+
+export async function getLastNotificationResponse(): Promise<Record<string, unknown> | null> {
+  const impl = await getReal();
+  return impl
+    ? impl.getLastNotificationResponse()
+    : noop.getLastNotificationResponse();
+}
+
+export async function getPermissionStatus(): Promise<string> {
+  const impl = await getReal();
+  return impl ? impl.getPermissionStatus() : noop.getPermissionStatus();
 }
 
 export async function getScheduledNotificationsSummary(): Promise<
